@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard | drivenbyfaith3d{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <header class="section-header">
+        <h2>Admin Console</h2>
+        <p class="section-subtitle">Manage storefront listings and transformation gallery.</p>
+    </header>
+
+    <div class="admin-grid">
+        <div class="admin-card">
+            <h3>Add Listing</h3>
+            <form class="stack" action="{{ url_for('add_listing') }}" method="post" enctype="multipart/form-data">
+                <label for="listing-title">Title</label>
+                <input id="listing-title" name="title" type="text" required>
+
+                <label for="listing-description">Description</label>
+                <textarea id="listing-description" name="description" rows="4" required></textarea>
+
+                <label for="listing-price">Price (USD)</label>
+                <input id="listing-price" name="price" type="number" min="0" step="0.01" required>
+
+                <label for="listing-image">Image (optional)</label>
+                <input id="listing-image" name="image" type="file" accept="image/*">
+
+                <button type="submit" class="btn primary">Publish Listing</button>
+            </form>
+        </div>
+
+        <div class="admin-card">
+            <h3>Add Before &amp; After</h3>
+            <form class="stack" action="{{ url_for('add_before_after') }}" method="post" enctype="multipart/form-data">
+                <label for="gallery-title">Title</label>
+                <input id="gallery-title" name="title" type="text" required>
+
+                <label for="gallery-description">Description (optional)</label>
+                <textarea id="gallery-description" name="description" rows="4"></textarea>
+
+                <label for="gallery-stl">STL Image</label>
+                <input id="gallery-stl" name="stl_image" type="file" accept="image/*">
+
+                <label for="gallery-printed">Printed Image</label>
+                <input id="gallery-printed" name="printed_image" type="file" accept="image/*">
+
+                <button type="submit" class="btn primary">Add Showcase</button>
+            </form>
+        </div>
+    </div>
+
+    <section class="admin-table">
+        <h3>Current Listings</h3>
+        {% if listings %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for listing in listings %}
+                        <tr>
+                            <td>{{ listing.title }}</td>
+                            <td>{{ listing.description[:120] }}{% if listing.description|length > 120 %}…{% endif %}</td>
+                            <td>${{ '%.2f'|format(listing.price) }}</td>
+                            <td>
+                                <form action="{{ url_for('delete_listing', listing_id=listing.id) }}" method="post" onsubmit="return confirm('Delete this listing?');">
+                                    <button type="submit" class="btn danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="empty-state">No listings published yet.</p>
+        {% endif %}
+    </section>
+
+    <section class="admin-table">
+        <h3>Before &amp; After Gallery</h3>
+        {% if gallery %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in gallery %}
+                        <tr>
+                            <td>{{ item.title }}</td>
+                            <td>{% if item.description %}{{ item.description[:120] }}{% if item.description|length > 120 %}…{% endif %}{% else %}—{% endif %}</td>
+                            <td>
+                                <form action="{{ url_for('delete_before_after', item_id=item.id) }}" method="post" onsubmit="return confirm('Remove this gallery entry?');">
+                                    <button type="submit" class="btn danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="empty-state">No gallery entries yet.</p>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}

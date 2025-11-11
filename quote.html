@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Quote Generator | drivenbyfaith3d{% endblock %}
+
+{% block content %}
+<section class="section quote-section">
+    <header class="section-header">
+        <h2>Instant Quote Generator</h2>
+        <p class="section-subtitle">Tell us about your project and get a rapid estimate.</p>
+    </header>
+
+    <div class="quote-layout">
+        <form class="quote-form" method="post">
+            <div class="form-row">
+                <label for="name">Name</label>
+                <input id="name" name="name" type="text" required>
+            </div>
+            <div class="form-row">
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" required>
+            </div>
+            <div class="form-row">
+                <label for="material">Material</label>
+                <select id="material" name="material" required>
+                    <option value="">Choose material</option>
+                    <option value="PLA">PLA</option>
+                    <option value="ABS">ABS</option>
+                    <option value="PETG">PETG</option>
+                    <option value="Resin">Resin</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="volume_cm3">Model volume (cm³)</label>
+                <input id="volume_cm3" name="volume_cm3" type="number" step="0.01" min="0.1" required>
+            </div>
+            <div class="form-row">
+                <label for="complexity">Detail level</label>
+                <select id="complexity" name="complexity" required>
+                    <option value="">Select detail level</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="notes">Notes (optional)</label>
+                <textarea id="notes" name="notes" rows="4" placeholder="Tell us about timelines, finishing, or special instructions."></textarea>
+            </div>
+            <button type="submit" class="btn primary">Calculate Quote</button>
+        </form>
+
+        <aside class="quote-summary">
+            <h3>Your Estimate</h3>
+            {% if estimate %}
+                <p class="quote-result">${{ '%.2f'|format(estimate) }}</p>
+                <p class="quote-note">A confirmation has been logged. Our team will follow up via email.</p>
+            {% else %}
+                <p class="quote-placeholder">Submit details to generate a personalized quote.</p>
+            {% endif %}
+            <ul class="quote-tips">
+                <li>Pricing accounts for material usage and detail complexity.</li>
+                <li>Additional finishing or painting services are quoted separately.</li>
+                <li>Large production runs can unlock volume discounts.</li>
+            </ul>
+        </aside>
+    </div>
+</section>
+{% endblock %}

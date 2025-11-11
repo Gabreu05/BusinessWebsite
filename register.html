@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Sign Up | drivenbyfaith3d{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <h2>Create your account</h2>
+    <p class="auth-subtitle">Join the community to track quotes and orders.</p>
+    <form class="auth-form" method="post">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" required autofocus>
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" minlength="6" required>
+
+        <label for="confirm_password">Confirm Password</label>
+        <input id="confirm_password" name="confirm_password" type="password" minlength="6" required>
+
+        <button type="submit" class="btn primary">Create account</button>
+    </form>
+    <p class="auth-switch">Already registered? <a href="{{ url_for('login') }}">Log in</a></p>
+</section>
+{% endblock %}

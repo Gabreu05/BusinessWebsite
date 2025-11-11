@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Home | drivenbyfaith3d{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <h1>Faith-Fueled 3D Printing Solutions</h1>
+        <p>Bring your STL files to life with precision prints, inspired designs, and dedicated service.</p>
+        <div class="cta-group">
+            <a class="btn primary" href="{{ url_for('quote') }}">Start a Quote</a>
+            <a class="btn secondary" href="{{ url_for('before_after_gallery') }}">See Transformations</a>
+        </div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+        <span class="hero-chip">Custom Orders</span>
+        <span class="hero-chip">Rapid Turnaround</span>
+        <span class="hero-chip">Faith Driven</span>
+    </div>
+</section>
+
+<section class="section listings-preview">
+    <header class="section-header">
+        <h2>Featured Listings</h2>
+        <a class="section-link" href="{{ url_for('view_listings') }}">Browse all</a>
+    </header>
+    {% if listings %}
+        <div class="card-grid">
+            {% for listing in listings %}
+                <article class="card">
+                    {% if listing.image_filename %}
+                        <img src="{{ url_for('static', filename=listing.image_filename) }}" alt="{{ listing.title }}" loading="lazy">
+                    {% else %}
+                        <div class="card-placeholder">No image available</div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h3>{{ listing.title }}</h3>
+                        <p>{{ listing.description[:120] }}{% if listing.description|length > 120 %}…{% endif %}</p>
+                        <span class="card-price">${{ '%.2f'|format(listing.price) }}</span>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-state">Listings coming soon. Check back shortly!</p>
+    {% endif %}
+</section>
+
+<section class="section gallery-preview">
+    <header class="section-header">
+        <h2>Before &amp; After Highlights</h2>
+        <a class="section-link" href="{{ url_for('before_after_gallery') }}">View gallery</a>
+    </header>
+    {% if gallery %}
+        <div class="gallery-grid">
+            {% for item in gallery %}
+                <article class="gallery-card">
+                    <div class="gallery-images">
+                        {% if item.stl_filename %}
+                            <img src="{{ url_for('static', filename=item.stl_filename) }}" alt="{{ item.title }} STL render" loading="lazy">
+                        {% endif %}
+                        {% if item.printed_filename %}
+                            <img src="{{ url_for('static', filename=item.printed_filename) }}" alt="{{ item.title }} 3D printed" loading="lazy">
+                        {% endif %}
+                    </div>
+                    <div class="gallery-body">
+                        <h3>{{ item.title }}</h3>
+                        {% if item.description %}
+                            <p>{{ item.description }}</p>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-state">Showcase transformations will live here soon.</p>
+    {% endif %}
+</section>
+{% endblock %}

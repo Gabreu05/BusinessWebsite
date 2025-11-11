@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Listings | drivenbyfaith3d{% endblock %}
+
+{% block content %}
+<section class="section">
+    <header class="section-header">
+        <h2>Shop Listings</h2>
+        {% if current_user and current_user.is_admin %}
+            <a class="section-link" href="{{ url_for('admin_dashboard') }}">Manage listings</a>
+        {% endif %}
+    </header>
+    {% if listings %}
+        <div class="card-grid">
+            {% for listing in listings %}
+                <article class="card">
+                    {% if listing.image_filename %}
+                        <img src="{{ url_for('static', filename=listing.image_filename) }}" alt="{{ listing.title }}" loading="lazy">
+                    {% endif %}
+                    <div class="card-body">
+                        <h3>{{ listing.title }}</h3>
+                        <p>{{ listing.description }}</p>
+                        <span class="card-price">${{ '%.2f'|format(listing.price) }}</span>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-state">No listings available yet. Please check back soon!</p>
+    {% endif %}
+</section>
+{% endblock %}

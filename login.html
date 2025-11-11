@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Login | drivenbyfaith3d{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <h2>Welcome back</h2>
+    <p class="auth-subtitle">Access your dashboard and stay up to date.</p>
+    <form class="auth-form" method="post">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" required autofocus>
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required>
+
+        <button type="submit" class="btn primary">Log in</button>
+    </form>
+    <p class="auth-switch">Need an account? <a href="{{ url_for('register') }}">Sign up</a></p>
+</section>
+{% endblock %}

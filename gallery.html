@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Before &amp; After | drivenbyfaith3d{% endblock %}
+
+{% block content %}
+<section class="section">
+    <header class="section-header">
+        <h2>Before &amp; After Transformations</h2>
+        <p class="section-subtitle">From STL render to finished 3D print.</p>
+    </header>
+    {% if items %}
+        <div class="gallery-grid">
+            {% for item in items %}
+                <article class="gallery-card">
+                    <div class="gallery-images">
+                        {% if item.stl_filename %}
+                            <figure>
+                                <img src="{{ url_for('static', filename=item.stl_filename) }}" alt="{{ item.title }} STL file" loading="lazy">
+                                <figcaption>STL model</figcaption>
+                            </figure>
+                        {% endif %}
+                        {% if item.printed_filename %}
+                            <figure>
+                                <img src="{{ url_for('static', filename=item.printed_filename) }}" alt="{{ item.title }} printed part" loading="lazy">
+                                <figcaption>3D print</figcaption>
+                            </figure>
+                        {% endif %}
+                    </div>
+                    <div class="gallery-body">
+                        <h3>{{ item.title }}</h3>
+                        {% if item.description %}
+                            <p>{{ item.description }}</p>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-state">We&apos;re working on new showcases. Stay tuned!</p>
+    {% endif %}
+</section>
+{% endblock %}
