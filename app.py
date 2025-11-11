@@ -1,6 +1,7 @@
 import os
+import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from typing import Optional
 
@@ -40,6 +41,7 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    contact = db.Column(db.String(120), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -135,6 +137,16 @@ def get_current_user() -> Optional[User]:
     return db.session.get(User, user_id)
 
 
+def is_valid_contact(value: str) -> bool:
+    if not value:
+        return False
+
+    email_pattern = r'^[^@\s]+@[^@\s]+\.[^@\s]+$'
+    phone_digits = re.sub(r'\D', '', value)
+
+    return bool(re.match(email_pattern, value)) or 10 <= len(phone_digits) <= 15
+
+
 @app.context_processor
 def inject_globals():
     return {
@@ -154,17 +166,22 @@ def index():
 def register():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
+        contact = request.form.get('contact', '').strip()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
 
         if not username or not password:
             flash('Username and password are required.', 'error')
+        elif not contact:
+            flash('Please provide an email address or phone number.', 'error')
+        elif not is_valid_contact(contact):
+            flash('Contact information must be a valid email or phone number.', 'error')
         elif password != confirm_password:
             flash('Passwords do not match.', 'error')
         elif User.query.filter_by(username=username).first():
             flash('Username already taken.', 'error')
         else:
-            user = User(username=username)
+            user = User(username=username, contact=contact)
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
@@ -179,6 +196,7 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
+        remember_me = request.form.get('remember_me') == 'on'
 
         user = User.query.filter_by(username=username).first()
 
@@ -187,6 +205,7 @@ def login():
         else:
             session['user_id'] = user.id
             session['is_admin'] = user.is_admin
+            session.permanent = remember_me
             flash('Logged in successfully.', 'success')
             next_url = request.args.get('next')
             return redirect(next_url or url_for('index'))
@@ -377,15 +396,20 @@ def initialize_database() -> None:
 
     admin_username = os.environ.get('DRIVENBYFAITH3D_ADMIN_USER', 'admin')
     admin_password = os.environ.get('DRIVENBYFAITH3D_ADMIN_PASS', 'admin123')
+    admin_contact = os.environ.get('DRIVENBYFAITH3D_ADMIN_CONTACT', 'admin@example.com')
 
     existing_admin = User.query.filter_by(username=admin_username).first()
 
     if not existing_admin:
-        admin = User(username=admin_username, is_admin=True)
+        admin = User(username=admin_username, is_admin=True, contact=admin_contact)
         admin.set_password(admin_password)
         db.session.add(admin)
         db.session.commit()
         app.logger.info('Created default admin account. Please change the default password ASAP.')
+    else:
+        if not existing_admin.contact:
+            existing_admin.contact = admin_contact
+            db.session.commit()
 
 
 with app.app_context():

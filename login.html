@@ -12,6 +12,11 @@
         <label for="password">Password</label>
         <input id="password" name="password" type="password" required>
 
+        <label class="remember-option">
+            <input type="checkbox" name="remember_me">
+            Remember me for 30 days
+        </label>
+
         <button type="submit" class="btn primary">Log in</button>
     </form>
     <p class="auth-switch">Need an account? <a href="{{ url_for('register') }}">Sign up</a></p>
