@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Quote Messages | drivenbyfaith3d{% endblock %}
+
+{% block content %}
+<section class="section">
+    <header class="section-header">
+        <h2>Your Quote Messages</h2>
+        <p class="section-subtitle">Stay in touch with drivenbyfaith3d regarding your requests.</p>
+    </header>
+
+    {% if quotes %}
+    <div class="quote-messages-user">
+        {% for quote in quotes %}
+            {% set messages = messages_by_quote.get(quote.id, []) %}
+            {% set subject = conversation_subjects.get(quote.id) %}
+            {% set last_update = last_message_at.get(quote.id) %}
+            <article class="quote-user-card" id="quote-{{ quote.id }}">
+                <header class="quote-thread-header">
+                    <div>
+                        <h3>{{ subject }}</h3>
+                        <p class="quote-user-subtitle">
+                            Quote #{{ quote.id }} • Submitted {{ quote.created_at.strftime('%b %d, %Y %I:%M %p') }}
+                        </p>
+                    </div>
+                    {% if last_update %}
+                        <span class="quote-thread-updated">Last updated {{ last_update.strftime('%b %d, %Y %I:%M %p') }}</span>
+                    {% endif %}
+                </header>
+
+                <div class="quote-user-notes">
+                    <strong>Your notes:</strong> {{ quote.notes or '—' }}
+                </div>
+
+                {% if messages %}
+                    <ul class="quote-message-list">
+                        {% for message in messages %}
+                            <li class="quote-message {{ 'quote-message--incoming' if message.sender_admin else 'quote-message--outgoing' }}">
+                                <div class="quote-message-meta">
+                                    <span class="quote-message-sender">
+                                        {% if message.sender_admin %}
+                                            {{ message.sender.full_name if message.sender else 'Admin Team' }}
+                                        {% elif message.sender and message.sender.id == current_user.id %}
+                                            You
+                                        {% else %}
+                                            {{ message.sender.full_name if message.sender else 'User' }}
+                                        {% endif %}
+                                    </span>
+                                    <span class="quote-message-date">{{ message.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+                                </div>
+                                {% if message.subject %}
+                                    <p class="quote-message-subject">{{ message.subject }}</p>
+                                {% endif %}
+                                <p class="quote-message-body">{{ message.body }}</p>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="empty-state">No messages yet.</p>
+                {% endif %}
+
+                <form class="message-form" action="{{ url_for('user_send_quote_message', quote_id=quote.id) }}" method="post">
+                    {% if messages %}
+                        <input type="hidden" name="subject" value="{{ subject }}">
+                    {% else %}
+                        <label for="subject-{{ quote.id }}">Subject</label>
+                        <input id="subject-{{ quote.id }}" name="subject" type="text" required placeholder="Subject for this conversation">
+                    {% endif %}
+
+                    <label for="message-{{ quote.id }}">Message</label>
+                    <textarea id="message-{{ quote.id }}" name="message" rows="4" required placeholder="Write your message to the admin team"></textarea>
+
+                    <button type="submit" class="btn primary">Send Message</button>
+                </form>
+            </article>
+        {% endfor %}
+    </div>
+    {% else %}
+        <p class="empty-state">You don’t have any quote submissions yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

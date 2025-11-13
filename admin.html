@@ -7,6 +7,9 @@
         <h2>Admin Console</h2>
         <p class="section-subtitle">Manage storefront listings and transformation gallery.</p>
     </header>
+    <div class="admin-actions">
+        <a class="section-link" href="{{ url_for('admin_quotes') }}">View Quote Requests</a>
+    </div>
 
     <div class="admin-grid">
         <div class="admin-card">
@@ -45,6 +48,38 @@
 
                 <button type="submit" class="btn primary">Add Showcase</button>
             </form>
+        </div>
+
+        <div class="admin-card admin-email-card">
+            <h3>Email Notifications</h3>
+            <div class="admin-email-status">
+                <strong>Client ID:</strong> {{ 'Configured' if graph_status.configured else 'Missing' }}<br>
+                <strong>Status:</strong> {{ 'Connected' if graph_status.connected else 'Not connected' }}<br>
+                <strong>Scopes:</strong> {{ graph_status.scopes or '—' }}<br>
+                <strong>Redirect URI:</strong> {{ graph_status.redirect_uri or 'Set MS_GRAPH_REDIRECT_URI' }}
+            </div>
+
+            {% if not graph_status.configured %}
+                <div class="admin-email-hint">
+                    <p>Set the environment variables <code>MS_GRAPH_CLIENT_ID</code> and <code>MS_GRAPH_CLIENT_SECRET</code> to enable Microsoft Graph email.</p>
+                    <p>After configuring, restart the server and connect your Microsoft account.</p>
+                </div>
+            {% elif graph_status.connected %}
+                <form class="stack" action="{{ url_for('admin_test_email') }}" method="post">
+                    <label for="test-email">Send test email to</label>
+                    <input id="test-email" name="email" type="email" value="{{ current_user.email }}" placeholder="you@example.com" required>
+                    <button type="submit" class="btn primary">Send Test Email</button>
+                </form>
+                <form class="stack" action="{{ url_for('microsoft_disconnect') }}" method="post" onsubmit="return confirm('Disconnect Microsoft Graph email?');">
+                    <button type="submit" class="btn secondary">Disconnect Microsoft Account</button>
+                </form>
+            {% else %}
+                <a class="btn primary" href="{{ url_for('microsoft_connect') }}">Connect Microsoft Account</a>
+                <div class="admin-email-hint">
+                    <p>You will be redirected to Microsoft to grant Mail.Send permissions for drivenbyfaith3d.</p>
+                    <p>Ensure the redirect URI <code>{{ graph_status.redirect_uri }}</code> is registered in Azure.</p>
+                </div>
+            {% endif %}
         </div>
     </div>
 

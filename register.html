@@ -6,17 +6,26 @@
     <h2>Create your account</h2>
     <p class="auth-subtitle">Join the community to track quotes and orders.</p>
     <form class="auth-form" method="post">
+        <label for="full_name">Full Name</label>
+        <input id="full_name" name="full_name" type="text" required>
+
         <label for="username">Username</label>
         <input id="username" name="username" type="text" required autofocus>
 
-        <label for="contact">Email or Phone</label>
-        <input id="contact" name="contact" type="text" required placeholder="you@example.com or (555) 123-4567">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required placeholder="you@example.com">
 
         <label for="password">Password</label>
-        <input id="password" name="password" type="password" minlength="6" required>
+        <div class="password-field">
+            <input id="password" name="password" type="password" minlength="6" required>
+            <button type="button" class="password-toggle" data-toggle="password" aria-label="Show password">Show</button>
+        </div>
 
         <label for="confirm_password">Confirm Password</label>
-        <input id="confirm_password" name="confirm_password" type="password" minlength="6" required>
+        <div class="password-field">
+            <input id="confirm_password" name="confirm_password" type="password" minlength="6" required>
+            <button type="button" class="password-toggle" data-toggle="confirm_password" aria-label="Show password">Show</button>
+        </div>
 
         <button type="submit" class="btn primary">Create account</button>
     </form>

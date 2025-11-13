@@ -50,6 +50,7 @@ img {
 .container {
     width: min(1080px, 92vw);
     margin: 0 auto;
+    padding: 0 1rem;
 }
 
 .site-header {
@@ -159,14 +160,24 @@ img {
 .flash-messages {
     display: grid;
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin: 0 auto 2rem;
+    width: fit-content;
+    max-width: 90vw;
+    text-align: center;
 }
 
 .flash {
-    padding: 1rem 1.25rem;
+    padding: 0.8rem 1.2rem;
     border-radius: var(--radius-sm);
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    display: inline-block;
+}
+
+.flash.flash-hide {
+    opacity: 0;
+    transform: translateY(-10px);
 }
 
 .flash.success {
@@ -185,7 +196,6 @@ img {
     gap: 2.5rem;
     padding: 3.5rem 3rem;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    background: linear-gradient(140deg, rgba(255, 255, 255, 0.04) 0%, rgba(0, 0, 0, 0.45) 100%);
     border-radius: var(--radius);
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: var(--shadow);
@@ -193,15 +203,11 @@ img {
     align-items: center;
     justify-items: center;
     text-align: center;
+    background: rgba(0, 0, 0, 0.45);
 }
 
 .hero::before {
-    content: "";
-    position: absolute;
-    inset: -20% -30% 40% 40%;
-    background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.12), transparent 60%);
-    opacity: 0.7;
-    pointer-events: none;
+    content: none;
 }
 
 .hero > * {
@@ -317,6 +323,11 @@ img {
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.section-links {
+    display: flex;
     gap: 1rem;
 }
 
@@ -471,6 +482,13 @@ img {
     color: var(--text);
 }
 
+.auth-form input:focus,
+.auth-form textarea:focus,
+.auth-form select:focus {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--accent);
+}
+
 .auth-form .remember-option {
     display: flex;
     align-items: center;
@@ -488,6 +506,39 @@ img {
     text-align: center;
     margin-top: 1.5rem;
     color: var(--text-muted);
+}
+
+.auth-form .password-field {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    background: var(--surface-light);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.auth-form .password-field input {
+    border: none;
+    padding: 0.75rem 0.9rem;
+}
+
+.auth-form .password-field input:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.auth-form .password-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.auth-form .password-toggle.revealed {
+    color: var(--accent);
 }
 
 .quote-layout {
@@ -551,6 +602,57 @@ img {
     color: var(--text-muted);
 }
 
+.quote-dual {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.quote-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: grid;
+    gap: 1rem;
+    box-shadow: var(--shadow);
+}
+
+.quote-card h3 {
+    margin: 0;
+}
+
+.quote-card-subtitle {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.quote-card input[type="text"],
+.quote-card input[type="file"],
+.quote-card textarea {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: var(--surface-light);
+    color: var(--text);
+}
+
+.quote-card input[type="file"] {
+    padding: 0.6rem 0.9rem;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.quote-card textarea {
+    resize: vertical;
+}
+
+.quote-hint {
+    margin-top: 2.5rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
 .admin-section {
     display: grid;
     gap: 2.5rem;
@@ -569,6 +671,24 @@ img {
     border: 1px solid rgba(255, 255, 255, 0.08);
     display: grid;
     gap: 1rem;
+}
+
+.admin-email-card {
+    align-self: flex-start;
+}
+
+.admin-email-status {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+.admin-email-hint {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
 }
 
 .admin-card form.stack {
@@ -596,7 +716,7 @@ img {
 .admin-table table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 520px;
+    min-width: 560px;
 }
 
 .admin-table th,
@@ -632,6 +752,71 @@ img {
     margin-right: 0.75rem;
 }
 
+.admin-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+}
+
+.quote-section.quote-locked {
+    position: relative;
+}
+
+.quote-section.quote-locked * {
+    pointer-events: none;
+}
+
+.quote-container {
+    position: relative;
+}
+
+.quote-container.quote-locked {
+    filter: blur(4px);
+    pointer-events: none;
+}
+
+.quote-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    backdrop-filter: blur(6px);
+    background: rgba(5, 5, 5, 0.75);
+    z-index: 5;
+    pointer-events: auto;
+}
+
+.quote-overlay-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 2.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow);
+    width: min(400px, 92vw);
+    display: grid;
+    gap: 1.25rem;
+    text-align: left;
+    pointer-events: auto;
+}
+
+.quote-overlay-card h3 {
+    margin: 0;
+}
+
+.quote-overlay-card p {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.overlay-form {
+    gap: 1rem;
+}
+
+.overlay-switch {
+    text-align: center;
+    margin: 0;
+}
+
 @media (max-width: 880px) {
     .nav-menu {
         position: absolute;
@@ -662,9 +847,10 @@ img {
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 1024px) {
     .hero {
-        padding: 2.5rem 1.5rem;
+        padding: 3rem 2rem;
+        grid-template-columns: 1fr;
         text-align: center;
     }
 
@@ -673,16 +859,445 @@ img {
         text-align: center;
     }
 
-    .site-main {
-        padding-top: 1.25rem;
+    .cta-group {
+        justify-content: center;
     }
 
-    .auth-section {
-        margin: 2rem auto;
-        padding: 2rem;
+    .admin-section {
+        gap: 1.5rem;
     }
 
+    .detail-card dl {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .site-header .container {
+        padding: 1rem 0;
+    }
+
+    .quote-dual {
+        grid-template-columns: 1fr;
+    }
+
+    .quote-card {
+        padding: 1.5rem;
+    }
+
+    .detail-card,
+    .detail-messages,
+    .quote-card,
+    .auth-section,
     .admin-table {
-        padding: 1rem;
+        padding: 1.5rem;
     }
+
+    .detail-actions,
+    .section-links {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .section-links .section-link,
+    .detail-actions .btn {
+        text-align: center;
+    }
+}
+
+@media (max-width: 600px) {
+    body {
+        font-size: 0.95rem;
+    }
+
+    .hero-logo {
+        width: clamp(220px, 60vw, 300px);
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    .message-form button,
+    .detail-actions .btn,
+    .admin-table button,
+    .quote-card button {
+        width: 100%;
+    }
+
+    .messages-list li,
+    .quote-card,
+    .detail-card,
+    .detail-messages {
+        padding: 1.25rem;
+    }
+
+    .quote-hint {
+        text-align: left;
+    }
+
+    .flash-messages {
+        justify-items: center;
+    }
+}
+
+@media (max-width: 420px) {
+    .brand-text {
+        font-size: 0.9rem;
+    }
+
+    .hero h1 {
+        font-size: 2.1rem;
+    }
+
+    .quote-card input[type="file"] {
+        font-size: 0.9rem;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+.quote-section.quote-locked .quote-dual,
+.quote-section.quote-locked .quote-hint {
+    filter: blur(4px);
+    pointer-events: none;
+}
+
+.admin-quotes-actions {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.admin-quotes-layout {
+    display: block;
+}
+
+.admin-quotes-sidebar {
+    position: sticky;
+    top: 6rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: grid;
+    gap: 1rem;
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+}
+
+.admin-quotes-sidebar h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.admin-quotes-deleted-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 1rem;
+}
+
+.deleted-item {
+    background: var(--surface-light);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    display: grid;
+    gap: 0.5rem;
+}
+
+.deleted-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+}
+
+.deleted-user {
+    color: var(--accent);
+}
+
+.deleted-body a {
+    display: inline-block;
+    margin-right: 0.5rem;
+    color: var(--accent);
+}
+
+.admin-quotes-main {
+    display: grid;
+    gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .admin-quotes-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.admin-actions-cell {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.admin-actions-cell form {
+    margin: 0;
+}
+
+.admin-quote-detail {
+    display: grid;
+    gap: 2rem;
+}
+
+.quote-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.quote-detail-card,
+.quote-messages-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: grid;
+    gap: 1.25rem;
+}
+
+.quote-detail-list {
+    margin: 0;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.quote-detail-list div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.quote-detail-list dt {
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.quote-detail-list dd {
+    margin: 0;
+    text-align: right;
+}
+
+.quote-detail-files {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.quote-detail-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.quote-message-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 1rem;
+}
+
+.quote-message-list li {
+    background: var(--surface-light);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.quote-thread-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.quote-thread-header h3 {
+    margin: 0 0 0.25rem;
+}
+
+.quote-thread-updated {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.quote-message-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.quote-message-sender {
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.quote-message-subject {
+    margin: 0 0 0.35rem;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.quote-message-body {
+    margin: 0;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.quote-message-list li.quote-message--incoming {
+    border-left: 3px solid var(--accent);
+}
+
+.quote-message-list li.quote-message--outgoing {
+    border-left: 3px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.quote-messages-user {
+    display: grid;
+    gap: 2rem;
+}
+
+.quote-user-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 2rem;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.quote-user-notes {
+    background: var(--surface-light);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.quote-messages {
+    display: grid;
+    gap: 1rem;
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+}
+
+.quote-messages .messages-list ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.quote-messages .messages-list li {
+    background: var(--surface-light);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.message-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.message-form {
+    display: grid;
+    gap: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 1rem;
+}
+
+.message-form input,
+.message-form textarea {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: var(--surface-light);
+    color: var(--text);
+}
+
+.quote-detail .detail-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.quote-detail dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin: 0;
+}
+
+.quote-detail dt {
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.quote-detail dd {
+    margin: 0.3rem 0 0;
+    color: var(--text);
+}
+
+.detail-messages {
+    margin-top: 2.5rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: grid;
+    gap: 1.5rem;
+}
+
+.detail-messages .messages-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.detail-messages .messages-list li {
+    background: var(--surface-light);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.quote-detail .archived-banner {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.detail-actions {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
 }

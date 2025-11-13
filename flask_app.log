@@ -1,0 +1,172 @@
+ 2025-11-13 00:39:03,428 WARNING: Microsoft Graph not connected; unable to send email to gabriel.m.abreu@outlook.com [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:322]
+2025-11-13 00:43:17,663 WARNING: Microsoft Graph not connected; unable to send email to gabriel.m.abreu@outlook.com [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:322]
+2025-11-13 01:03:25,553 ERROR: Exception on /admin [GET] [in C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py:828]
+Traceback (most recent call last):
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py", line 171, in wrapper
+    return view_func(*args, **kwargs)
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py", line 459, in admin_dashboard
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\admin.html", line 1, in top-level template code
+    {% extends 'base.html' %}
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\base.html", line 55, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\admin.html", line 56, in block 'content'
+    <strong>Client ID:</strong> {{ 'Configured' if graph_status.configured else 'Missing' }}<br>
+    ^^^^^^^^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'graph_status' is undefined
+2025-11-13 01:05:21,268 ERROR: Exception on /admin [GET] [in C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py:828]
+Traceback (most recent call last):
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py", line 171, in wrapper
+    return view_func(*args, **kwargs)
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py", line 459, in admin_dashboard
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\admin.html", line 1, in top-level template code
+    {% extends 'base.html' %}
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\base.html", line 55, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\admin.html", line 56, in block 'content'
+    <strong>Client ID:</strong> {{ 'Configured' if graph_status.configured else 'Missing' }}<br>
+    ^^^^^^^^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'graph_status' is undefined
+2025-11-13 01:05:22,726 ERROR: Exception on /admin [GET] [in C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py:828]
+Traceback (most recent call last):
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py", line 171, in wrapper
+    return view_func(*args, **kwargs)
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py", line 459, in admin_dashboard
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\admin.html", line 1, in top-level template code
+    {% extends 'base.html' %}
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\base.html", line 55, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\admin.html", line 56, in block 'content'
+    <strong>Client ID:</strong> {{ 'Configured' if graph_status.configured else 'Missing' }}<br>
+    ^^^^^^^^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'graph_status' is undefined
+2025-11-13 01:05:33,581 ERROR: Exception on /admin [GET] [in C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py:828]
+Traceback (most recent call last):
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py", line 171, in wrapper
+    return view_func(*args, **kwargs)
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py", line 459, in admin_dashboard
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\admin.html", line 1, in top-level template code
+    {% extends 'base.html' %}
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\base.html", line 55, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\admin.html", line 56, in block 'content'
+    <strong>Client ID:</strong> {{ 'Configured' if graph_status.configured else 'Missing' }}<br>
+    ^^^^^^^^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'graph_status' is undefined
+2025-11-13 01:05:46,803 ERROR: Exception on /admin [GET] [in C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py:828]
+Traceback (most recent call last):
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py", line 171, in wrapper
+    return view_func(*args, **kwargs)
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py", line 459, in admin_dashboard
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\admin.html", line 1, in top-level template code
+    {% extends 'base.html' %}
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\base.html", line 55, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\admin.html", line 56, in block 'content'
+    <strong>Client ID:</strong> {{ 'Configured' if graph_status.configured else 'Missing' }}<br>
+    ^^^^^^^^^
+  File "C:\Users\gabri\AppData\Local\Programs\Python\Python314\Lib\site-packages\jinja2\environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'graph_status' is undefined

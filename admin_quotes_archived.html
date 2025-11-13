@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Archived Quotes | drivenbyfaith3d{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <header class="section-header">
+        <h2>Archived Quote Requests</h2>
+        <a class="section-link" href="{{ url_for('admin_quotes') }}">Back to Active Quotes</a>
+    </header>
+
+    {% if deleted_requests %}
+        <div class="admin-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Archived</th>
+                        <th>User</th>
+                        <th>Request Type</th>
+                        <th>Files</th>
+                        <th>Notes</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in deleted_requests %}
+                        <tr>
+                            <td>{{ request.deleted_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                            <td>{{ request.user.full_name }}</td>
+                            <td>{{ 'STL / 3MF Upload' if request.request_type == 'has_file' else 'Design Needed' }}</td>
+                            <td><a class="section-link" href="{{ url_for('admin_quote_detail', quote_id=request.id) }}">Open</a></td>
+                            <td>
+                                <form action="{{ url_for('unarchive_quote', quote_id=request.id) }}" method="post" onsubmit="return confirm('Restore this quote request to active list?');">
+                                    <button type="submit" class="btn secondary">Unarchive</button>
+                                </form>
+                            </td>
+                            <td>
+                                <form action="{{ url_for('delete_quote_permanent', quote_id=request.id) }}" method="post" onsubmit="return confirm('Permanently delete this quote request?');">
+                                    <button type="submit" class="btn danger">Delete Permanently</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="empty-state">No archived quotes within the last 30 days.</p>
+    {% endif %}
+</section>
+{% endblock %}

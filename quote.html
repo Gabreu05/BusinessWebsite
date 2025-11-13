@@ -4,64 +4,78 @@
 {% block content %}
 <section class="section quote-section">
     <header class="section-header">
-        <h2>Instant Quote Generator</h2>
-        <p class="section-subtitle">Tell us about your project and get a rapid estimate.</p>
+        <h2>Quote Generator</h2>
+        <p class="section-subtitle">Choose the path that fits your project.</p>
+        {% if current_user %}
+            <a class="btn secondary" href="{{ url_for('quote_messages') }}">View Messages</a>
+        {% endif %}
     </header>
 
-    <div class="quote-layout">
-        <form class="quote-form" method="post">
-            <div class="form-row">
-                <label for="name">Name</label>
-                <input id="name" name="name" type="text" required>
-            </div>
-            <div class="form-row">
-                <label for="email">Email</label>
-                <input id="email" name="email" type="email" required>
-            </div>
-            <div class="form-row">
-                <label for="material">Material</label>
-                <select id="material" name="material" required>
-                    <option value="">Choose material</option>
-                    <option value="PLA">PLA</option>
-                    <option value="ABS">ABS</option>
-                    <option value="PETG">PETG</option>
-                    <option value="Resin">Resin</option>
-                </select>
-            </div>
-            <div class="form-row">
-                <label for="volume_cm3">Model volume (cm³)</label>
-                <input id="volume_cm3" name="volume_cm3" type="number" step="0.01" min="0.1" required>
-            </div>
-            <div class="form-row">
-                <label for="complexity">Detail level</label>
-                <select id="complexity" name="complexity" required>
-                    <option value="">Select detail level</option>
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                </select>
-            </div>
-            <div class="form-row">
-                <label for="notes">Notes (optional)</label>
-                <textarea id="notes" name="notes" rows="4" placeholder="Tell us about timelines, finishing, or special instructions."></textarea>
-            </div>
-            <button type="submit" class="btn primary">Calculate Quote</button>
-        </form>
+    <div class="quote-container {% if require_login %}quote-locked{% endif %}">
+        <div class="quote-dual">
+            <form class="quote-card" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="quote_type" value="has_file">
+                <h3>Already Have an STL or CAD File?</h3>
+                <p class="quote-card-subtitle">Upload your file and we’ll review it for a tailored estimate.</p>
 
-        <aside class="quote-summary">
-            <h3>Your Estimate</h3>
-            {% if estimate %}
-                <p class="quote-result">${{ '%.2f'|format(estimate) }}</p>
-                <p class="quote-note">A confirmation has been logged. Our team will follow up via email.</p>
-            {% else %}
-                <p class="quote-placeholder">Submit details to generate a personalized quote.</p>
-            {% endif %}
-            <ul class="quote-tips">
-                <li>Pricing accounts for material usage and detail complexity.</li>
-                <li>Additional finishing or painting services are quoted separately.</li>
-                <li>Large production runs can unlock volume discounts.</li>
-            </ul>
-        </aside>
+                <label for="file_name">Name</label>
+                <input id="file_name" name="requester_name" type="text" required value="{{ current_user.full_name if current_user else '' }}" {% if require_login %}disabled{% endif %}>
+
+                <label for="project_file">Upload STL or 3MF File</label>
+                <input id="project_file" name="project_file" type="file" accept=".stl,.3mf" {% if require_login %}disabled{% endif %}>
+
+                <label for="file_notes">Notes, questions, or concerns</label>
+                <textarea id="file_notes" name="notes" rows="4" placeholder="Share print settings, deadlines, or anything we should know." {% if require_login %}disabled{% endif %}></textarea>
+
+                <button type="submit" class="btn primary" {% if require_login %}disabled{% endif %}>Submit File for Quote</button>
+            </form>
+
+            <form class="quote-card" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="quote_type" value="needs_design">
+                <h3>No File Yet? Let’s Plan It.</h3>
+                <p class="quote-card-subtitle">Upload inspiration or describe what you need built.</p>
+
+                <label for="design_name">Name</label>
+                <input id="design_name" name="requester_name" type="text" required value="{{ current_user.full_name if current_user else '' }}" {% if require_login %}disabled{% endif %}>
+
+                <label for="reference_image">Upload reference image (optional)</label>
+                <input id="reference_image" name="reference_image" type="file" accept="image/*" {% if require_login %}disabled{% endif %}>
+
+                <label for="design_notes">Notes on how you want to proceed</label>
+                <textarea id="design_notes" name="notes" rows="4" placeholder="Tell us about the item, dimensions, finish, or branding you’d like." {% if require_login %}disabled{% endif %}></textarea>
+
+                <button type="submit" class="btn secondary" {% if require_login %}disabled{% endif %}>Start a Design Quote</button>
+            </form>
+        </div>
+
+        <p class="quote-hint">Quotes are reviewed by the drivenbyfaith3d team. You can track submissions in your account, and our admin dashboard shows every request without exposing passwords.</p>
     </div>
+
+    {% if require_login %}
+        <div class="quote-overlay">
+            <div class="quote-overlay-card">
+                <h3>Sign in to Continue</h3>
+                <p>Please log in to submit a quote request. Don’t worry—you can still explore the options available.</p>
+                <form class="auth-form overlay-form" method="post" action="{{ url_for('login') }}">
+                    <label for="overlay-username">Username</label>
+                    <input id="overlay-username" name="username" type="text" required>
+
+                    <label for="overlay-password">Password</label>
+                    <div class="password-field">
+                        <input id="overlay-password" name="password" type="password" required>
+                        <button type="button" class="password-toggle" data-toggle="overlay-password" aria-label="Show password">Show</button>
+                    </div>
+
+                    <label class="remember-option">
+                        <input type="checkbox" name="remember_me">
+                        Remember me for 30 days
+                    </label>
+
+                    <button type="submit" class="btn primary">Log In</button>
+                    <p class="overlay-switch">Need an account? <a href="{{ url_for('register') }}">Sign up</a></p>
+                </form>
+            </div>
+        </div>
+    {% endif %}
 </section>
 {% endblock %}

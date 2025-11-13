@@ -28,6 +28,7 @@
                 <a href="{{ url_for('quote') }}" class="nav-link">Get a Quote</a>
                 {% if current_user %}
                     <span class="nav-link nav-user">Hi, {{ current_user.username }}!</span>
+                    <a href="{{ url_for('quote_messages') }}" class="nav-link">Messages</a>
                     {% if current_user.is_admin %}
                         <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Admin</a>
                     {% endif %}
