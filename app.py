@@ -11,6 +11,7 @@ from urllib.parse import urlencode
 
 import requests  # type: ignore
 from logging.handlers import RotatingFileHandler
+from sqlalchemy.orm import selectinload
 from flask import (
     Flask,
     flash,
@@ -36,18 +37,23 @@ QUOTE_UPLOAD_REFERENCE_DIR = os.path.join(QUOTE_UPLOAD_DIR, 'reference')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'stl', '3mf'}
 
 app = Flask(__name__, template_folder='.')
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SECRET_KEY'] = os.environ.get('DRIVENBYFAITH3D_SECRET', 'change-this-secret-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB upload limit
-app.config['MS_GRAPH_CLIENT_ID'] = os.environ.get('MS_GRAPH_CLIENT_ID')
-app.config['MS_GRAPH_CLIENT_SECRET'] = os.environ.get('MS_GRAPH_CLIENT_SECRET')
-app.config['MS_GRAPH_TENANT'] = os.environ.get('MS_GRAPH_TENANT', 'common')
-app.config['MS_GRAPH_REDIRECT_URI'] = os.environ.get('MS_GRAPH_REDIRECT_URI', 'http://localhost:5000/oauth/callback')
-app.config['MS_GRAPH_SCOPES'] = os.environ.get('MS_GRAPH_SCOPES', 'https://graph.microsoft.com/Mail.Send offline_access')
+app.config['EMAILJS_SERVICE_ID'] = os.environ.get('EMAILJS_SERVICE_ID')
+app.config['EMAILJS_TEMPLATE_ID'] = os.environ.get('EMAILJS_TEMPLATE_ID')
+app.config['EMAILJS_PUBLIC_KEY'] = os.environ.get('EMAILJS_PUBLIC_KEY')
+app.config['EMAILJS_PRIVATE_KEY'] = os.environ.get('EMAILJS_PRIVATE_KEY')
 
 # Configure logging to a file
-if not app.debug:
+if not app.debug and not os.environ.get('VERCEL'):
     file_handler = RotatingFileHandler('flask_app.log', maxBytes=1024 * 1024 * 10, backupCount=10)
     file_handler.setFormatter(logging.Formatter(
         '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
@@ -65,6 +71,10 @@ os.makedirs(QUOTE_UPLOAD_REFERENCE_DIR, exist_ok=True)
 db = SQLAlchemy(app)
 
 
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -72,9 +82,9 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
     quotes = db.relationship('QuoteRequest', backref='user', lazy=True)
-    messages_sent = db.relationship('QuoteMessage', back_populates='sender', lazy=True)
+    messages_sent = db.relationship('QuoteMessage', back_populates='sender', lazy='selectin')
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
@@ -89,7 +99,7 @@ class Listing(db.Model):
     description = db.Column(db.Text, nullable=False)
     price = db.Column(db.Float, nullable=False)
     image_filename = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
 
 class BeforeAfter(db.Model):
@@ -98,7 +108,7 @@ class BeforeAfter(db.Model):
     description = db.Column(db.Text)
     stl_filename = db.Column(db.String(255))
     printed_filename = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
 
 class QuoteRequest(db.Model):
@@ -109,9 +119,15 @@ class QuoteRequest(db.Model):
     uploaded_filename = db.Column(db.String(255))
     reference_image_filename = db.Column(db.String(255))
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
     deleted_at = db.Column(db.DateTime)
-    messages = db.relationship('QuoteMessage', backref='quote', lazy=True, cascade='all, delete-orphan')
+    messages = db.relationship(
+        'QuoteMessage',
+        backref='quote',
+        lazy='selectin',
+        cascade='all, delete-orphan',
+        order_by='QuoteMessage.created_at'
+    )
 
 
 class QuoteMessage(db.Model):
@@ -121,7 +137,7 @@ class QuoteMessage(db.Model):
     sender_admin = db.Column(db.Boolean, default=True)
     subject = db.Column(db.String(200))
     body = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     sender = db.relationship('User', back_populates='messages_sent', lazy=True)
 
@@ -188,186 +204,95 @@ def is_valid_email(value: str) -> bool:
     return bool(re.match(email_pattern, value))
 
 
-def graph_authority_url() -> str:
-    tenant = app.config.get('MS_GRAPH_TENANT') or 'common'
-    return f"https://login.microsoftonline.com/{tenant}"
-
-
-def store_graph_tokens(token_data: dict) -> None:
-    access_token = token_data.get('access_token')
-    if access_token:
-        session['graph_access_token'] = access_token
-    expires_in = int(token_data.get('expires_in', 3599) or 3599)
-    session['graph_token_expires_at'] = time.time() + expires_in
-    refresh_token = token_data.get('refresh_token')
-    if refresh_token:
-        session['graph_refresh_token'] = refresh_token
-
-
-def clear_graph_tokens() -> None:
-    session.pop('graph_access_token', None)
-    session.pop('graph_refresh_token', None)
-    session.pop('graph_token_expires_at', None)
-    session.pop('graph_oauth_state', None)
-
-
-def build_graph_authorization_url(state: str) -> Optional[str]:
-    client_id = app.config.get('MS_GRAPH_CLIENT_ID')
-    redirect_uri = app.config.get('MS_GRAPH_REDIRECT_URI')
-    scopes = app.config.get('MS_GRAPH_SCOPES')
-
-    if not client_id or not redirect_uri or not scopes:
-        return None
-
-    params = {
-        'client_id': client_id,
-        'response_type': 'code',
-        'redirect_uri': redirect_uri,
-        'response_mode': 'query',
-        'scope': scopes,
-        'state': state,
-        'prompt': 'select_account',
-    }
-    return f"{graph_authority_url()}/oauth2/v2.0/authorize?{urlencode(params)}"
-
-
-def exchange_code_for_token(code: str) -> Optional[dict]:
-    client_id = app.config.get('MS_GRAPH_CLIENT_ID')
-    client_secret = app.config.get('MS_GRAPH_CLIENT_SECRET')
-    redirect_uri = app.config.get('MS_GRAPH_REDIRECT_URI')
-    scopes = app.config.get('MS_GRAPH_SCOPES')
-
-    if not client_id or not client_secret or not redirect_uri:
-        return None
-
-    data = {
-        'client_id': client_id,
-        'scope': scopes,
-        'code': code,
-        'redirect_uri': redirect_uri,
-        'grant_type': 'authorization_code',
-        'client_secret': client_secret,
-    }
-
-    token_url = f"{graph_authority_url()}/oauth2/v2.0/token"
-    try:
-        response = requests.post(token_url, data=data, timeout=10)
-    except requests.RequestException as exc:
-        app.logger.error('Microsoft Graph token exchange failed: %s', exc)
-        return None
-
-    if response.ok:
-        return response.json()
-
-    app.logger.error('Microsoft Graph token exchange failed: %s', response.text)
-    return None
-
-
-def get_graph_access_token() -> Optional[str]:
-    client_id = app.config.get('MS_GRAPH_CLIENT_ID')
-    client_secret = app.config.get('MS_GRAPH_CLIENT_SECRET')
-    redirect_uri = app.config.get('MS_GRAPH_REDIRECT_URI')
-    scopes = app.config.get('MS_GRAPH_SCOPES')
-
-    if not client_id or not client_secret or not redirect_uri:
-        return None
-
-    access_token = session.get('graph_access_token')
-    expires_at = session.get('graph_token_expires_at', 0)
-    if access_token and expires_at - 60 > time.time():
-        return access_token
-
-    refresh_token = session.get('graph_refresh_token')
-    if not refresh_token:
-        return None
-
-    data = {
-        'client_id': client_id,
-        'scope': scopes,
-        'refresh_token': refresh_token,
-        'redirect_uri': redirect_uri,
-        'grant_type': 'refresh_token',
-        'client_secret': client_secret,
-    }
-
-    token_url = f"{graph_authority_url()}/oauth2/v2.0/token"
-    try:
-        response = requests.post(token_url, data=data, timeout=10)
-    except requests.RequestException as exc:
-        app.logger.error('Failed to refresh Microsoft Graph token: %s', exc)
-        return None
-
-    if response.ok:
-        token_data = response.json()
-        store_graph_tokens(token_data)
-        return token_data.get('access_token')
-
-    app.logger.error('Failed to refresh Microsoft Graph token: %s', response.text)
-    clear_graph_tokens()
-    return None
-
-
-def is_graph_connected() -> bool:
-    expires_at = session.get('graph_token_expires_at', 0)
-    if session.get('graph_access_token') and expires_at - 60 > time.time():
-        return True
-    if session.get('graph_refresh_token'):
-        return bool(get_graph_access_token())
-    return False
-
-
 def send_email(to_address: str, subject: str, body: str) -> bool:
-    access_token = get_graph_access_token()
-    if not access_token:
-        app.logger.warning('Microsoft Graph not connected; unable to send email to %s', to_address)
+    service_id = app.config.get('EMAILJS_SERVICE_ID')
+    template_id = app.config.get('EMAILJS_TEMPLATE_ID')
+    public_key = app.config.get('EMAILJS_PUBLIC_KEY')
+    private_key = app.config.get('EMAILJS_PRIVATE_KEY')
+
+    if not all([service_id, template_id, public_key, private_key]):
+        app.logger.warning('EmailJS credentials missing; skipping email to %s', to_address)
         return False
 
     payload = {
-        'message': {
+        'service_id': service_id,
+        'template_id': template_id,
+        'user_id': public_key,
+        'template_params': {
+            'to_email': to_address,
             'subject': subject,
-            'body': {
-                'contentType': 'Text',
-                'content': body,
-            },
-            'toRecipients': [
-                {'emailAddress': {'address': to_address}}
-            ],
+            'message': body,
         },
-        'saveToSentItems': True,
     }
 
     headers = {
-        'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/json',
+        'Authorization': f'Bearer {private_key}',
     }
 
     try:
         response = requests.post(
-            'https://graph.microsoft.com/v1.0/me/sendMail',
+            'https://api.emailjs.com/api/v1.0/email/send',
             json=payload,
             headers=headers,
             timeout=10,
         )
     except requests.RequestException as exc:
-        app.logger.error('Microsoft Graph sendMail request failed: %s', exc)
+        app.logger.error('EmailJS request failed: %s', exc)
         return False
 
-    if response.status_code == 202:
+    if response.status_code == 200:
         return True
 
-    if response.status_code == 401:
-        clear_graph_tokens()
-        app.logger.warning('Microsoft Graph access token expired while sending to %s', to_address)
-    else:
-        app.logger.error('Microsoft Graph sendMail failed (%s): %s', response.status_code, response.text)
+    app.logger.error('EmailJS send failed (%s): %s', response.status_code, response.text)
     return False
+
+
+def emailjs_configured() -> bool:
+    return all(
+        [
+            app.config.get('EMAILJS_SERVICE_ID'),
+            app.config.get('EMAILJS_TEMPLATE_ID'),
+            app.config.get('EMAILJS_PUBLIC_KEY'),
+            app.config.get('EMAILJS_PRIVATE_KEY'),
+        ]
+    )
+
+
+def send_quote_submission_email(quote_request: QuoteRequest) -> bool:
+    user = quote_request.user
+    if not user or not user.email:
+        app.logger.warning('Quote %s has no associated user email; cannot send confirmation.', quote_request.id)
+        return False
+
+    requester = quote_request.requester_name or user.full_name or user.username
+    quote_id = quote_request.id
+
+    if quote_request.request_type == 'has_file':
+        subject = f"Quote #{quote_id}: Files received"
+        body = (
+            f"Hello {requester},\n\n"
+            "Thanks for sending your model files to drivenbyfaith3d. "
+            "We’ll review them and respond with pricing and timeline details shortly."
+            f"\n\nReference ID: #{quote_id}\n\nBlessings,\ndrivenbyfaith3d"
+        )
+    else:
+        subject = f"Quote #{quote_id}: Design request received"
+        body = (
+            f"Hello {requester},\n\n"
+            "Thanks for reaching out about a custom design. "
+            "We’ll look over your notes and follow up to discuss the details and next steps."
+            f"\n\nReference ID: #{quote_id}\n\nBlessings,\ndrivenbyfaith3d"
+        )
+
+    return send_email(user.email, subject, body)
 
 
 @app.context_processor
 def inject_globals():
     return {
         'current_user': get_current_user(),
-        'current_year': datetime.utcnow().year,
+        'current_year': utcnow().year,
     }
 
 
@@ -506,6 +431,10 @@ def quote():
             return redirect(url_for('quote'))
 
         db.session.commit()
+
+        if not send_quote_submission_email(quote_request):
+            app.logger.warning('Automated quote confirmation failed for quote %s.', quote_request.id)
+
         flash('Quote request received! We will review it and reach out soon.', 'success')
         return redirect(url_for('quote'))
 
@@ -516,22 +445,22 @@ def quote():
 @login_required
 def quote_messages():
     user = get_current_user()
-    quotes = QuoteRequest.query.filter_by(user_id=user.id) \
-        .order_by(QuoteRequest.created_at.desc()).all()
-    messages_by_quote = {}
+    quotes = (
+        QuoteRequest.query.filter_by(user_id=user.id)
+        .options(
+            selectinload(QuoteRequest.messages).selectinload(QuoteMessage.sender)
+        )
+        .order_by(QuoteRequest.created_at.desc())
+        .all()
+    )
+
+    messages_by_quote = {quote.id: list(quote.messages) for quote in quotes}
     conversation_subjects = {}
     last_message_at = {}
 
     for quote in quotes:
-        messages = QuoteMessage.query.filter_by(quote_id=quote.id) \
-            .order_by(QuoteMessage.created_at.asc()).all()
-        messages_by_quote[quote.id] = messages
-
-        subject = next((m.subject for m in messages if m.subject), None)
-        if not subject:
-            subject = f"Quote #{quote.id} Conversation"
-        conversation_subjects[quote.id] = subject
-
+        messages = messages_by_quote[quote.id]
+        conversation_subjects[quote.id] = conversation_subject_for(messages, quote.id)
         if messages:
             last_message_at[quote.id] = messages[-1].created_at
 
@@ -594,13 +523,10 @@ def user_messages():
 def admin_dashboard():
     listings = Listing.query.order_by(Listing.created_at.desc()).all()
     gallery = BeforeAfter.query.order_by(BeforeAfter.created_at.desc()).all()
-    graph_status = {
-        'configured': bool(app.config.get('MS_GRAPH_CLIENT_ID') and app.config.get('MS_GRAPH_CLIENT_SECRET')),
-        'connected': is_graph_connected(),
-        'redirect_uri': app.config.get('MS_GRAPH_REDIRECT_URI'),
-        'scopes': app.config.get('MS_GRAPH_SCOPES'),
+    email_status = {
+        'configured': emailjs_configured(),
     }
-    return render_template('admin.html', listings=listings, gallery=gallery, graph_status=graph_status)
+    return render_template('admin.html', listings=listings, gallery=gallery, email_status=email_status)
 
 
 @app.route('/admin/listings/add', methods=['POST'])
@@ -713,16 +639,17 @@ def admin_quotes():
 @app.route('/admin/quotes/<int:quote_id>')
 @admin_required
 def admin_quote_detail(quote_id: int):
-    quote_request = db.session.get(QuoteRequest, quote_id)
+    quote_request = (
+        QuoteRequest.query.options(
+            selectinload(QuoteRequest.messages).selectinload(QuoteMessage.sender)
+        ).get(quote_id)
+    )
     if not quote_request:
         flash('Quote request not found.', 'error')
         return redirect(url_for('admin_quotes'))
 
-    messages = QuoteMessage.query.filter_by(quote_id=quote_request.id) \
-        .order_by(QuoteMessage.created_at.asc()).all()
-    conversation_subject = next((m.subject for m in messages if m.subject), None)
-    if not conversation_subject:
-        conversation_subject = f"Quote #{quote_request.id} Conversation"
+    messages = list(quote_request.messages)
+    conversation_subject = conversation_subject_for(messages, quote_request.id)
 
     return render_template(
         'admin_quote_detail.html',
@@ -735,7 +662,7 @@ def admin_quote_detail(quote_id: int):
 @app.route('/admin/quotes/archived')
 @admin_required
 def admin_quotes_archived():
-    deleted_cutoff = datetime.utcnow() - timedelta(days=30)
+    deleted_cutoff = utcnow() - timedelta(days=30)
     deleted_requests = QuoteRequest.query.filter(QuoteRequest.deleted_at.is_not(None)) \
         .filter(QuoteRequest.deleted_at >= deleted_cutoff) \
         .order_by(QuoteRequest.deleted_at.desc()).all()
@@ -757,8 +684,7 @@ def admin_send_quote_message(quote_id: int):
 
     existing_messages = QuoteMessage.query.filter_by(quote_id=quote_request.id) \
         .order_by(QuoteMessage.created_at.asc()).all()
-    existing_subject = next((m.subject for m in existing_messages if m.subject), None)
-    email_subject = existing_subject or f"Quote #{quote_request.id} Conversation"
+    email_subject = conversation_subject_for(existing_messages, quote_request.id)
 
     message = QuoteMessage(
         quote_id=quote_request.id,
@@ -780,7 +706,7 @@ def admin_send_quote_message(quote_id: int):
     if email_sent:
         flash('Message sent to user and emailed.', 'success')
     else:
-        flash('Message saved, but email failed to send. Connect Microsoft Graph and try again.', 'error')
+        flash('Message saved, but email failed to send. Verify EmailJS configuration and try again.', 'error')
     return redirect(url_for('admin_quote_detail', quote_id=quote_id))
 
 
@@ -795,7 +721,7 @@ def delete_quote(quote_id: int):
         flash('Quote request already deleted.', 'info')
         return redirect(url_for('admin_quotes'))
 
-    quote_request.deleted_at = datetime.utcnow()
+    quote_request.deleted_at = utcnow()
     db.session.commit()
     flash('Quote request archived. It will remain available for 30 days.', 'success')
     return redirect(url_for('admin_quotes'))
@@ -860,13 +786,12 @@ def create_quote_message(quote_id: int):
         flash('Unable to determine current admin user.', 'error')
         return redirect(url_for('admin_quotes'))
 
-    existing_messages = QuoteMessage.query.filter_by(quote_id=quote_request.id) \
-        .order_by(QuoteMessage.created_at.asc()).all()
-    existing_subject = next((m.subject for m in existing_messages if m.subject), None)
+    existing_messages = list(quote_request.messages)
 
     subject = request.form.get('subject', '').strip()
     if not subject:
-        subject = existing_subject or f"Quote #{quote_request.id} Conversation"
+        subject = conversation_subject_for(existing_messages, quote_request.id)
+
     body = request.form.get('body', '').strip()
     if not body:
         flash('Message body cannot be empty.', 'error')
@@ -888,7 +813,7 @@ def create_quote_message(quote_id: int):
     if email_sent:
         flash('Message sent to user.', 'success')
     else:
-        flash('Message saved, but email failed to send. Connect Microsoft Graph and try again.', 'error')
+        flash('Message saved, but email failed to send. Verify EmailJS configuration and try again.', 'error')
 
     return redirect(url_for('admin_quotes'))
 
@@ -903,85 +828,17 @@ def admin_test_email():
         flash('Please provide a valid email address for testing.', 'error')
         return redirect(url_for('admin_dashboard'))
 
-    if not is_graph_connected():
-        flash('Connect your Microsoft account before sending test emails.', 'error')
-        return redirect(url_for('admin_dashboard'))
-
-    subject = 'drivenbyfaith3d Test Email'
     body = (
         f"Hello {current_admin.full_name if current_admin else 'Admin'},\n\n"
-        "This is a test email sent via Microsoft Graph from the drivenbyfaith3d admin dashboard.\n"
-        "If you received this, the Microsoft integration is configured correctly.\n\n"
-        "Blessings,\n"
-        "drivenbyfaith3d"
+        "This is a test email sent via EmailJS from the drivenbyfaith3d dashboard.\n\n"
+        "-- drivenbyfaith3d"
     )
 
-    if send_email(target_email, subject, body):
+    if send_email(target_email, 'drivenbyfaith3d Test Email', body):
         flash(f'Test email sent to {target_email}. Please check the inbox and spam folder.', 'success')
     else:
-        flash('Failed to send test email. Reconnect Microsoft Graph and review the logs for details.', 'error')
+        flash('Failed to send test email. Verify EmailJS configuration.', 'error')
 
-    return redirect(url_for('admin_dashboard'))
-
-
-@app.route('/integrations/microsoft/connect')
-@admin_required
-def microsoft_connect():
-    if not session.get('is_admin'):
-        flash('Administrator access required.', 'error')
-        return redirect(url_for('login'))
-
-    if not app.config.get('MS_GRAPH_CLIENT_ID') or not app.config.get('MS_GRAPH_CLIENT_SECRET'):
-        flash('Microsoft Graph client ID and secret are not configured.', 'error')
-        return redirect(url_for('admin_dashboard'))
-
-    state = uuid.uuid4().hex
-    session['graph_oauth_state'] = state
-    authorization_url = build_graph_authorization_url(state)
-    if not authorization_url:
-        flash('Unable to initiate Microsoft Graph authorization. Check configuration.', 'error')
-        return redirect(url_for('admin_dashboard'))
-
-    return redirect(authorization_url)
-
-
-@app.route('/oauth/callback')
-def microsoft_callback():
-    if not session.get('is_admin'):
-        flash('Please sign in as an administrator before connecting Microsoft Graph.', 'error')
-        return redirect(url_for('login'))
-
-    if request.args.get('error'):
-        description = request.args.get('error_description') or request.args['error']
-        flash(f'Microsoft sign-in failed: {description}', 'error')
-        return redirect(url_for('admin_dashboard'))
-
-    expected_state = session.pop('graph_oauth_state', None)
-    returned_state = request.args.get('state')
-    if expected_state and expected_state != returned_state:
-        flash('Microsoft authorization state mismatch. Please try again.', 'error')
-        return redirect(url_for('admin_dashboard'))
-
-    code = request.args.get('code')
-    if not code:
-        flash('Microsoft authorization code missing.', 'error')
-        return redirect(url_for('admin_dashboard'))
-
-    token_data = exchange_code_for_token(code)
-    if not token_data:
-        flash('Failed to complete Microsoft Graph authorization.', 'error')
-        return redirect(url_for('admin_dashboard'))
-
-    store_graph_tokens(token_data)
-    flash('Microsoft account connected. Email notifications enabled.', 'success')
-    return redirect(url_for('admin_dashboard'))
-
-
-@app.route('/integrations/microsoft/disconnect', methods=['POST'])
-@admin_required
-def microsoft_disconnect():
-    clear_graph_tokens()
-    flash('Microsoft Graph connection removed.', 'info')
     return redirect(url_for('admin_dashboard'))
 
 
@@ -1007,6 +864,11 @@ def initialize_database() -> None:
             updated = True
         if updated:
             db.session.commit()
+
+
+def conversation_subject_for(messages, quote_id: int) -> str:
+    subject = next((m.subject for m in messages if getattr(m, 'subject', None)), None)
+    return subject or f"Quote #{quote_id} Conversation"
 
 
 with app.app_context():
