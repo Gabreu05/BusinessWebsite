@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Accounts | drivenbyfaith3d{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <header class="section-header">
+        <div>
+            <h2>Account Directory</h2>
+            <p class="section-subtitle">Review user details, test EmailJS, and send in-site password reset notices.</p>
+        </div>
+        <div class="section-links">
+            <a class="section-link" href="{{ url_for('admin_quote_inbox') }}">Quotes</a>
+            <a class="section-link" href="{{ url_for('view_listings') }}">Listings</a>
+        </div>
+    </header>
+
+    <div class="admin-grid">
+        <div class="admin-card admin-email-card">
+            <h3>Email Notifications</h3>
+            {% if email_status.configured %}
+                <form class="stack" action="{{ url_for('admin_test_email') }}" method="post">
+                    <label for="test-email">Send test email to</label>
+                    <input id="test-email" name="email" type="email" value="{{ current_user.email }}" placeholder="you@example.com" required>
+                    <button type="submit" class="btn primary">Send Test Email</button>
+                </form>
+                <div class="admin-email-hint">
+                    <p>Emails are sent via EmailJS using the configured service and template.</p>
+                    {% if not email_status.has_private_key %}
+                        <p>Optional: set <code>EMAILJS_PRIVATE_KEY</code> if your EmailJS account requires server-side keys.</p>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p class="admin-email-status">
+                    EmailJS is not configured. Provide the environment variables below to enable email delivery.
+                </p>
+                <div class="admin-email-hint">
+                    {% if email_status.missing %}
+                        <p>Missing variables:</p>
+                        <ul>
+                            {% for key in email_status.missing %}
+                                <li><code>{{ key }}</code></li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>Provide your EmailJS credentials to enable email delivery.</p>
+                    {% endif %}
+                    <p>Optional: add <code>EMAILJS_PRIVATE_KEY</code> if your EmailJS service is configured for strict mode.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="admin-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Password</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.full_name }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td><span class="masked-password">**********</span></td>
+                        <td>
+                            <form action="{{ url_for('admin_send_reset_notice', user_id=user.id) }}" method="post" onsubmit="return confirm('Send password reset notice to {{ user.full_name }}?');">
+                                <button type="submit" class="btn secondary">Send reset message</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+

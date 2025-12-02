@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up | drivenbyfaith3d</title>
+    <link rel="stylesheet" href="static/css/style.css?v=2025">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <div class="header-left">
+                <div class="account-menu-wrapper">
+                    <button class="account-toggle" type="button" aria-haspopup="true" aria-expanded="false" data-account-toggle>
+                        <span class="sr-only">Toggle account menu</span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <div class="account-menu" data-account-menu role="menu" aria-label="Account menu">
+                        
+                            <div class="account-overview">
+                                <p class="account-overview-label">Guest mode</p>
+                                <p class="account-overview-helper">Sign in to track quote replies and messages.</p>
+                            </div>
+                            <div class="account-links">
+                                <a href="login.html" class="account-link" role="menuitem">Log in</a>
+                                <a href="register.html" class="account-link account-link-accent" role="menuitem">Create an account</a>
+                                <a href="quote.html" class="account-link" role="menuitem">Start a quote</a>
+                                <a href="gallery.html" class="account-link" role="menuitem">Before &amp; After</a>
+                                <a href="listings.html" class="account-link" role="menuitem">Shop listings</a>
+                            </div>
+                        
+                    </div>
+                </div>
+                <a class="brand" href="index.html">
+                <img class="brand-logo" src="static/img/DrivenByFaith3d%20Logo.png" alt="DrivenByFaith3D logo" width="72" height="72" fetchpriority="high">
+                    <span class="brand-text">drivenbyfaith3d</span>
+                </a>
+            </div>
+            <div class="header-right">
+                <nav class="nav-menu" data-nav>
+                    <a href="index.html" class="nav-link">Home</a>
+                    <a href="listings.html" class="nav-link">Shop Listings</a>
+                    <a href="gallery.html" class="nav-link">Before &amp; After</a>
+                    
+                        <a href="quote.html" class="nav-link">Get a Quote</a>
+                    
+                    
+                        <a href="login.html" class="nav-link">Login</a>
+                        <a href="register.html" class="nav-link nav-cta">Sign Up</a>
+                    
+                </nav>
+                <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="site-main">
+        <div class="container">
+            
+                
+            
+            
+<section class="auth-section">
+    <h2>Create your account</h2>
+    <p class="auth-subtitle">Join the community to track quotes and orders.</p>
+    <form class="auth-form" method="post">
+        <label for="full_name">Full Name</label>
+        <input id="full_name" name="full_name" type="text" required>
+
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" required autofocus>
+
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required placeholder="you@example.com">
+
+        <label for="password">Password</label>
+        <div class="password-field">
+            <input id="password" name="password" type="password" minlength="6" required>
+            <button type="button" class="password-toggle" data-toggle="password" aria-label="Show password">Show</button>
+        </div>
+
+        <label for="confirm_password">Confirm Password</label>
+        <div class="password-field">
+            <input id="confirm_password" name="confirm_password" type="password" minlength="6" required>
+            <button type="button" class="password-toggle" data-toggle="confirm_password" aria-label="Show password">Show</button>
+        </div>
+
+        <button type="submit" class="btn primary">Create account</button>
+    </form>
+    <p class="auth-switch">Already registered? <a href="login.html">Log in</a></p>
+</section>
+
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2025 drivenbyfaith3d. Built with faith and innovation.</p>
+        </div>
+    </footer>
+
+    <script src="static/js/main.js" defer></script>
+</body>
+</html>

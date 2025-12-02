@@ -12,7 +12,7 @@
         </div>
     </div>
     <div class="hero-visual">
-        <img class="hero-logo" src="{{ url_for('static', filename='img/DrivenByFaith3d Logo.png') }}" alt="DrivenByFaith3D logo">
+        <img class="hero-logo" src="{{ url_for('static', filename='img/DrivenByFaith3d Logo.png') }}" alt="DrivenByFaith3D logo" width="420" height="420" fetchpriority="high">
         <div class="hero-badges">
             <span class="hero-chip">Custom Orders</span>
             <span class="hero-chip">Rapid Turnaround</span>
@@ -31,7 +31,7 @@
             {% for listing in listings %}
                 <article class="card">
                     {% if listing.image_filename %}
-                        <img src="{{ url_for('static', filename=listing.image_filename) }}" alt="{{ listing.title }}" loading="lazy">
+                        <img src="{{ url_for('static', filename=listing.image_filename) }}" alt="{{ listing.title }}" loading="lazy" decoding="async">
                     {% else %}
                         <div class="card-placeholder">No image available</div>
                     {% endif %}
@@ -59,10 +59,10 @@
                 <article class="gallery-card">
                     <div class="gallery-images">
                         {% if item.stl_filename %}
-                            <img src="{{ url_for('static', filename=item.stl_filename) }}" alt="{{ item.title }} STL render" loading="lazy">
+                            <img src="{{ url_for('static', filename=item.stl_filename) }}" alt="{{ item.title }} STL render" loading="lazy" decoding="async">
                         {% endif %}
                         {% if item.printed_filename %}
-                            <img src="{{ url_for('static', filename=item.printed_filename) }}" alt="{{ item.title }} 3D printed" loading="lazy">
+                            <img src="{{ url_for('static', filename=item.printed_filename) }}" alt="{{ item.title }} 3D printed" loading="lazy" decoding="async">
                         {% endif %}
                     </div>
                     <div class="gallery-body">

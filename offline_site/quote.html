@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quote Generator | drivenbyfaith3d</title>
+    <link rel="stylesheet" href="static/css/style.css?v=2025">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <div class="header-left">
+                <div class="account-menu-wrapper">
+                    <button class="account-toggle" type="button" aria-haspopup="true" aria-expanded="false" data-account-toggle>
+                        <span class="sr-only">Toggle account menu</span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <div class="account-menu" data-account-menu role="menu" aria-label="Account menu">
+                        
+                            <div class="account-overview">
+                                <p class="account-overview-label">Guest mode</p>
+                                <p class="account-overview-helper">Sign in to track quote replies and messages.</p>
+                            </div>
+                            <div class="account-links">
+                                <a href="login.html" class="account-link" role="menuitem">Log in</a>
+                                <a href="register.html" class="account-link account-link-accent" role="menuitem">Create an account</a>
+                                <a href="quote.html" class="account-link" role="menuitem">Start a quote</a>
+                                <a href="gallery.html" class="account-link" role="menuitem">Before &amp; After</a>
+                                <a href="listings.html" class="account-link" role="menuitem">Shop listings</a>
+                            </div>
+                        
+                    </div>
+                </div>
+                <a class="brand" href="index.html">
+                <img class="brand-logo" src="static/img/DrivenByFaith3d%20Logo.png" alt="DrivenByFaith3D logo" width="72" height="72" fetchpriority="high">
+                    <span class="brand-text">drivenbyfaith3d</span>
+                </a>
+            </div>
+            <div class="header-right">
+                <nav class="nav-menu" data-nav>
+                    <a href="index.html" class="nav-link">Home</a>
+                    <a href="listings.html" class="nav-link">Shop Listings</a>
+                    <a href="gallery.html" class="nav-link">Before &amp; After</a>
+                    
+                        <a href="quote.html" class="nav-link">Get a Quote</a>
+                    
+                    
+                        <a href="login.html" class="nav-link">Login</a>
+                        <a href="register.html" class="nav-link nav-cta">Sign Up</a>
+                    
+                </nav>
+                <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="site-main">
+        <div class="container">
+            
+                
+            
+            
+<section class="section quote-section">
+    <header class="section-header">
+        <h2>Quote Generator</h2>
+        <p class="section-subtitle">Choose the path that fits your project.</p>
+        
+    </header>
+
+    <div class="quote-container quote-locked">
+        <div class="quote-dual">
+            <form class="quote-card" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="quote_type" value="has_file">
+                <h3>Upload Your File</h3>
+                <p class="quote-card-subtitle">Upload your file and we’ll review it for a tailored estimate.</p>
+
+                <label for="file_topic">Topic or Project Title</label>
+                <input id="file_topic" name="topic" type="text" required placeholder="Give this quote a title we can reference." disabled>
+
+                <label for="project_file">Upload STL or 3MF File</label>
+                <input id="project_file" name="project_file" type="file" accept=".stl,.3mf" disabled>
+
+                <label for="file_notes">Notes, questions, or concerns</label>
+                <textarea id="file_notes" name="notes" rows="4" placeholder="Share print settings, deadlines, or anything we should know." disabled></textarea>
+
+                <button type="submit" class="btn primary" disabled>Submit File for Quote</button>
+            </form>
+
+            <form class="quote-card" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="quote_type" value="needs_design">
+                <h3>Start a Design</h3>
+                <p class="quote-card-subtitle">Upload inspiration or describe what you need built.</p>
+
+                <label for="design_topic">Topic or Project Title</label>
+                <input id="design_topic" name="topic" type="text" required placeholder="Give this quote a title we can reference." disabled>
+
+                <label for="reference_image">Upload reference image (optional)</label>
+                <input id="reference_image" name="reference_image" type="file" accept="image/*" disabled>
+
+                <label for="design_notes">Notes on how you want to proceed</label>
+                <textarea id="design_notes" name="notes" rows="4" placeholder="Tell us about the item, dimensions, finish, or branding you’d like." disabled></textarea>
+
+                <button type="submit" class="btn secondary" disabled>Start a Design Quote</button>
+            </form>
+        </div>
+
+        <p class="quote-hint">Quotes are reviewed by the drivenbyfaith3d team. You can track submissions in your account, and our admin dashboard shows every request without exposing passwords.</p>
+    </div>
+
+    
+        <div class="quote-overlay">
+            <div class="quote-overlay-card">
+                <h3>Sign in to Continue</h3>
+                <p>Please log in to submit a quote request. Don’t worry—you can still explore the options available.</p>
+                <form class="auth-form overlay-form" method="post" action="login.html">
+                    <label for="overlay-username">Username</label>
+                    <input id="overlay-username" name="username" type="text" required>
+
+                    <label for="overlay-password">Password</label>
+                    <div class="password-field">
+                        <input id="overlay-password" name="password" type="password" required>
+                        <button type="button" class="password-toggle" data-toggle="overlay-password" aria-label="Show password">Show</button>
+                    </div>
+
+                    <label class="remember-option">
+                        <input type="checkbox" name="remember_me">
+                        Remember me for 30 days
+                    </label>
+
+                    <button type="submit" class="btn primary">Log In</button>
+                    <p class="overlay-switch">Need an account? <a href="register.html">Sign up</a></p>
+                </form>
+            </div>
+        </div>
+    
+</section>
+
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2025 drivenbyfaith3d. Built with faith and innovation.</p>
+        </div>
+    </footer>
+
+    <script src="static/js/main.js" defer></script>
+</body>
+</html>

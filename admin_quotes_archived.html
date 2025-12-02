@@ -5,7 +5,7 @@
 <section class="admin-section">
     <header class="section-header">
         <h2>Archived Quote Requests</h2>
-        <a class="section-link" href="{{ url_for('admin_quotes') }}">Back to Active Quotes</a>
+        <a class="section-link" href="{{ url_for('admin_quote_inbox') }}">Back to Quote Inbox</a>
     </header>
 
     {% if deleted_requests %}
@@ -14,6 +14,7 @@
                 <thead>
                     <tr>
                         <th>Archived</th>
+                        <th>Topic</th>
                         <th>User</th>
                         <th>Request Type</th>
                         <th>Files</th>
@@ -24,9 +25,10 @@
                 <tbody>
                     {% for request in deleted_requests %}
                         <tr>
-                            <td>{{ request.deleted_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                            <td>{{ request.deleted_at|est }}</td>
+                            <td>{{ request.topic or ('Quote #' ~ request.id) }}</td>
                             <td>{{ request.user.full_name }}</td>
-                            <td>{{ 'STL / 3MF Upload' if request.request_type == 'has_file' else 'Design Needed' }}</td>
+                            <td>{{ 'Upload Your File' if request.request_type == 'has_file' else 'Start a Design' }}</td>
                             <td><a class="section-link" href="{{ url_for('admin_quote_detail', quote_id=request.id) }}">Open</a></td>
                             <td>
                                 <form action="{{ url_for('unarchive_quote', quote_id=request.id) }}" method="post" onsubmit="return confirm('Restore this quote request to active list?');">

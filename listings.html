@@ -4,17 +4,97 @@
 {% block content %}
 <section class="section">
     <header class="section-header">
-        <h2>Shop Listings</h2>
+        <div>
+            <h2>Shop Listings</h2>
+            <p class="section-subtitle">One-off prints and pre-order projects available right now.</p>
+        </div>
         {% if current_user and current_user.is_admin %}
-            <a class="section-link" href="{{ url_for('admin_dashboard') }}">Manage listings</a>
+            <button
+                class="btn secondary"
+                type="button"
+                data-admin-menu-toggle="listings"
+                aria-expanded="false"
+            >
+                Manage listings
+            </button>
         {% endif %}
     </header>
+
+    {% if current_user and current_user.is_admin %}
+        <div class="page-admin-menu" data-admin-menu="listings" hidden>
+            <div class="page-admin-menu-header">
+                <div>
+                    <h3>Listings admin menu</h3>
+                    <p>Publish new storefront cards or remove anything that&apos;s sold out.</p>
+                </div>
+                <button class="page-admin-menu-close" type="button" data-admin-menu-close aria-label="Close listings admin menu">&times;</button>
+            </div>
+            <div class="page-admin-menu-body">
+                <div class="admin-grid">
+                    <div class="admin-card">
+                        <h4>Add listing</h4>
+                        <form class="stack" action="{{ url_for('add_listing') }}" method="post" enctype="multipart/form-data">
+                            <label for="listing-title-admin">Title</label>
+                            <input id="listing-title-admin" name="title" type="text" required>
+
+                            <label for="listing-description-admin">Description</label>
+                            <textarea id="listing-description-admin" name="description" rows="4" required></textarea>
+
+                            <label for="listing-price-admin">Price (USD)</label>
+                            <input id="listing-price-admin" name="price" type="number" min="0" step="0.01" required>
+
+                            <label for="listing-image-admin">Image (optional)</label>
+                            <input id="listing-image-admin" name="image" type="file" accept="image/*">
+
+                            <button type="submit" class="btn primary">Publish Listing</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="admin-table admin-inline-table">
+                    <div class="admin-table-heading">
+                        <h4>Current listings</h4>
+                        <p class="admin-table-subtitle">Remove entries that are no longer for sale.</p>
+                    </div>
+                    {% if listings %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Description</th>
+                                    <th>Price</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for listing in listings %}
+                                    <tr>
+                                        <td>{{ listing.title }}</td>
+                                        <td>{{ listing.description[:120] }}{% if listing.description|length > 120 %}…{% endif %}</td>
+                                        <td>${{ '%.2f'|format(listing.price) }}</td>
+                                        <td>
+                                            <form action="{{ url_for('delete_listing', listing_id=listing.id) }}" method="post" onsubmit="return confirm('Delete this listing?');">
+                                                <button type="submit" class="btn danger">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="empty-state">No listings published yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
     {% if listings %}
         <div class="card-grid">
             {% for listing in listings %}
                 <article class="card">
                     {% if listing.image_filename %}
-                        <img src="{{ url_for('static', filename=listing.image_filename) }}" alt="{{ listing.title }}" loading="lazy">
+                        <img src="{{ url_for('static', filename=listing.image_filename) }}" alt="{{ listing.title }}" loading="lazy" decoding="async">
                     {% endif %}
                     <div class="card-body">
                         <h3>{{ listing.title }}</h3>
@@ -28,4 +108,16 @@
         <p class="empty-state">No listings available yet. Please check back soon!</p>
     {% endif %}
 </section>
+
+{% if current_user and current_user.is_admin and request.args.get('admin') == 'listings' %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var listingsToggle = document.querySelector('[data-admin-menu-toggle="listings"]');
+    if (listingsToggle && listingsToggle.getAttribute('aria-expanded') === 'false') {
+        listingsToggle.click();
+        listingsToggle.focus({ preventScroll: true });
+    }
+});
+</script>
+{% endif %}
 {% endblock %}

@@ -174,3 +174,112 @@ jinja2.exceptions.UndefinedError: 'graph_status' is undefined
 2025-11-18 14:08:57,453 WARNING: Automated quote confirmation failed for quote 7. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:436]
 2025-11-18 14:12:32,974 WARNING: EmailJS credentials missing; skipping email to gabriel.m.abreu@outlook.com [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:214]
 2025-11-18 14:12:32,975 WARNING: Automated quote confirmation failed for quote 8. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:436]
+2025-11-25 13:51:28,331 INFO: Added topic column to quote_request table. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:132]
+2025-11-25 13:51:30,875 ERROR: EmailJS send failed (412): Outlook: Account suspended. Follow the instructions in your Inbox to verify your account., WASCL UserAction verdict is not None. Actual verdict is Suspend, ShowTierUpgrade. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:317]
+2025-11-25 13:51:30,877 WARNING: Automated quote confirmation failed for quote 15. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:502]
+2025-11-25 13:51:43,311 ERROR: EmailJS send failed (412): Outlook: Account suspended. Follow the instructions in your Inbox to verify your account., WASCL UserAction verdict is not None. Actual verdict is Suspend. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:317]
+2025-11-25 13:51:43,312 WARNING: Automated quote confirmation failed for quote 16. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:502]
+2025-11-25 13:56:36,911 ERROR: EmailJS send failed (412): Outlook: Account suspended. Follow the instructions in your Inbox to verify your account., WASCL UserAction verdict is not None. Actual verdict is Suspend. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:317]
+2025-11-25 13:56:36,912 WARNING: User quote message email failed for quote 16. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:582]
+2025-11-25 14:02:30,020 ERROR: EmailJS send failed (412): Outlook: Account suspended. Follow the instructions in your Inbox to verify your account., WASCL UserAction verdict is not None. Actual verdict is Suspend. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:317]
+2025-11-25 14:02:30,021 WARNING: Automated quote confirmation failed for quote 17. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:502]
+2025-11-25 14:09:34,678 ERROR: EmailJS send failed (412): Outlook: Account suspended. Follow the instructions in your Inbox to verify your account., WASCL UserAction verdict is not None. Actual verdict is Suspend. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:317]
+2025-11-25 14:09:34,679 WARNING: User quote message email failed for quote 17. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:582]
+2025-11-25 19:26:25,400 WARNING: EmailJS credentials missing (EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY); skipping email to gabriel.m.abreu@outlook.com [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:274]
+2025-11-25 21:27:51,425 ERROR: EmailJS send failed (400): The template ID not found. To find this ID, visit https://dashboard.emailjs.com/admin/templates [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:358]
+2025-11-25 21:27:51,426 WARNING: Automated quote confirmation failed for quote 19. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:551]
+2025-11-25 21:28:45,806 ERROR: EmailJS send failed (400): The template ID not found. To find this ID, visit https://dashboard.emailjs.com/admin/templates [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:358]
+2025-11-25 21:28:45,807 WARNING: Automated quote confirmation failed for quote 20. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:551]
+2025-11-25 21:56:26,525 INFO: Ensured quote_message read tracking columns. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:185]
+2025-11-25 22:01:06,715 ERROR: EmailJS send failed (400): The template ID not found. To find this ID, visit https://dashboard.emailjs.com/admin/templates [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:426]
+2025-11-25 22:01:06,716 WARNING: Automated quote confirmation failed for quote 21. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:619]
+2025-11-25 22:03:16,031 ERROR: EmailJS send failed (400): The template ID not found. To find this ID, visit https://dashboard.emailjs.com/admin/templates [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:426]
+2025-11-25 22:03:16,032 WARNING: Automated quote confirmation failed for quote 22. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:619]
+2025-11-25 22:16:54,202 ERROR: EmailJS send failed (400): The template ID not found. To find this ID, visit https://dashboard.emailjs.com/admin/templates [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:428]
+2025-11-25 22:16:54,203 WARNING: Automated quote confirmation failed for quote 23. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:621]
+2025-11-25 22:35:42,093 ERROR: EmailJS send failed (404): Account not found [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:428]
+2025-11-25 22:35:42,095 WARNING: Automated quote confirmation failed for quote 24. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:621]
+2025-11-29 21:05:42,115 ERROR: Exception on / [GET] [in C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py:828]
+Traceback (most recent call last):
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py", line 485, in index
+    return render_template('index.html', listings=listings, gallery=gallery)
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\index.html", line 1, in top-level template code
+    {% extends 'base.html' %}
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\base.html", line 83, in top-level template code
+    {% set notification_target = url_for('admin_dashboard') if current_user.is_admin else url_for('quote_messages') %}
+    ^
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py", line 1074, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py", line 1063, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+        endpoint,
+    ...<3 lines>...
+        force_external=_external,
+    )
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\werkzeug\routing\map.py", line 919, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'admin_dashboard'. Did you mean 'admin_quotes_archived' instead?
+2025-11-29 21:05:53,742 ERROR: Exception on / [GET] [in C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py:828]
+Traceback (most recent call last):
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py", line 1463, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py", line 872, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py", line 870, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py", line 855, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py", line 485, in index
+    return render_template('index.html', listings=listings, gallery=gallery)
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\index.html", line 1, in top-level template code
+    {% extends 'base.html' %}
+  File "C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\base.html", line 83, in top-level template code
+    {% set notification_target = url_for('admin_dashboard') if current_user.is_admin else url_for('quote_messages') %}
+    ^
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py", line 1074, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\flask\app.py", line 1063, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+        endpoint,
+    ...<3 lines>...
+        force_external=_external,
+    )
+  File "C:\Users\gabri\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\werkzeug\routing\map.py", line 919, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'admin_dashboard'. Did you mean 'admin_quotes_archived' instead?
+2025-11-29 21:40:20,144 WARNING: EmailJS credentials missing (EMAILJS_SERVICE_ID, EMAILJS_PUBLIC_KEY); skipping email to gabriel.m.abreu@outlook.com [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:385]
+2025-11-29 21:42:15,108 WARNING: EmailJS credentials missing (EMAILJS_SERVICE_ID, EMAILJS_PUBLIC_KEY); skipping email to gabriel.m.abreu@outlook.com [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:385]
+2025-11-29 21:42:15,108 WARNING: Automated quote confirmation failed for quote 25. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:621]
+2025-11-29 22:15:10,545 WARNING: EmailJS credentials missing (EMAILJS_SERVICE_ID, EMAILJS_PUBLIC_KEY); skipping email to gabriel.m.abreu@outlook.com [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:385]
+2025-11-29 22:15:10,545 WARNING: User quote message email failed for quote 25. [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:708]
+2025-11-29 22:18:58,756 WARNING: EmailJS credentials missing (EMAILJS_SERVICE_ID, EMAILJS_PUBLIC_KEY); skipping email to gabriel.m.abreu@outlook.com [in C:\Users\gabri\OneDrive\Documents\NJIT Homework\BusinessWebsite\app.py:385]

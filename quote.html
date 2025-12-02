@@ -15,11 +15,11 @@
         <div class="quote-dual">
             <form class="quote-card" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="quote_type" value="has_file">
-                <h3>Already Have an STL or CAD File?</h3>
+                <h3>Upload Your File</h3>
                 <p class="quote-card-subtitle">Upload your file and we’ll review it for a tailored estimate.</p>
 
-                <label for="file_name">Name</label>
-                <input id="file_name" name="requester_name" type="text" required value="{{ current_user.full_name if current_user else '' }}" {% if require_login %}disabled{% endif %}>
+                <label for="file_topic">Topic or Project Title</label>
+                <input id="file_topic" name="topic" type="text" required placeholder="Give this quote a title we can reference." {% if require_login %}disabled{% endif %}>
 
                 <label for="project_file">Upload STL or 3MF File</label>
                 <input id="project_file" name="project_file" type="file" accept=".stl,.3mf" {% if require_login %}disabled{% endif %}>
@@ -32,11 +32,11 @@
 
             <form class="quote-card" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="quote_type" value="needs_design">
-                <h3>No File Yet? Let’s Plan It.</h3>
+                <h3>Start a Design</h3>
                 <p class="quote-card-subtitle">Upload inspiration or describe what you need built.</p>
 
-                <label for="design_name">Name</label>
-                <input id="design_name" name="requester_name" type="text" required value="{{ current_user.full_name if current_user else '' }}" {% if require_login %}disabled{% endif %}>
+                <label for="design_topic">Topic or Project Title</label>
+                <input id="design_topic" name="topic" type="text" required placeholder="Give this quote a title we can reference." {% if require_login %}disabled{% endif %}>
 
                 <label for="reference_image">Upload reference image (optional)</label>
                 <input id="reference_image" name="reference_image" type="file" accept="image/*" {% if require_login %}disabled{% endif %}>

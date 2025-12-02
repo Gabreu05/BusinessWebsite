@@ -4,75 +4,171 @@
 {% block content %}
 <section class="section">
     <header class="section-header">
-        <h2>Your Quote Messages</h2>
-        <p class="section-subtitle">Stay in touch with drivenbyfaith3d regarding your requests.</p>
+        <div>
+            <h2>Your Messages</h2>
+            <p class="section-subtitle">Stay in touch with drivenbyfaith3d regarding your requests.</p>
+        </div>
+        <div class="section-links">
+            <button class="section-link new-convo-trigger" type="button" data-new-convo-open>
+                Start a new conversation
+            </button>
+        </div>
     </header>
 
     {% if quotes %}
-    <div class="quote-messages-user">
+    <div class="quote-selector-wrapper">
+        <div class="quote-selector-container">
+        <aside class="quote-selector" aria-label="Your quotes">
+            <table class="quote-selector-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Topic</th>
+                        <th scope="col">Original Message</th>
+                        <th scope="col" class="quote-selector-actions-header">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for quote in quotes %}
+                    {% set messages = messages_by_quote.get(quote.id, []) %}
+                    {% set last_update = last_message_at.get(quote.id) %}
+                    {% set topic_label = quote.topic or ('Quote #' ~ quote.id) %}
+                    {% set unread_total = unread_counts.get(quote.id, 0) %}
+                    <tr>
+                        <td>
+                            <button
+                                class="quote-selector-link quote-selector-link--topic {% if unread_total %}has-unread{% endif %}"
+                                type="button"
+                                data-quote-trigger="{{ quote.id }}"
+                                data-quote-topic="{{ topic_label | e }}"
+                                data-quote-updated="{{ last_update|est if last_update else '' }}"
+                                data-quote-submitted="{{ quote.created_at|est }}"
+                                data-quote-read-url="{{ url_for('user_mark_quote_read', quote_id=quote.id) }}"
+                                data-quote-unread="{{ unread_total }}"
+                            >
+                                <span class="quote-selector-title">{{ topic_label }}</span>
+                                {% if unread_total %}
+                                    <span class="quote-selector-badge" data-quote-badge>{{ unread_total }}</span>
+                                {% endif %}
+                            </button>
+                        </td>
+                        <td class="quote-selector-note-cell">
+                            <div class="quote-selector-note">
+                                {% if quote.request_type == 'system' %}
+                                    <strong>Account notification:</strong> {{ quote.notes or 'Admin communication about your account.' }}
+                                {% else %}
+                                    {{ quote.notes or 'No original message provided.' }}
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="quote-selector-action-cell">
+                            <form
+                                class="quote-selector-delete-form"
+                                action="{{ url_for('user_delete_quote', quote_id=quote.id) }}"
+                                method="post"
+                                onsubmit="return confirm('Delete this quote request? You will no longer receive updates.');"
+                            >
+                                <button type="submit" class="quote-selector-delete-btn" aria-label="Delete {{ topic_label }}">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </aside>
+        </div>
+    </div>
+
+    <section class="quote-conversation-section">
+        <div class="quote-conversation-card" data-quote-panel data-inline-panel="true">
+            <header class="quote-conversation-header">
+                <div class="quote-conversation-titles" data-quote-title>
+                    <h3>Conversation History</h3>
+                    <p class="quote-conversation-header-meta">Select a quote above to view the full thread.</p>
+                </div>
+            </header>
+            <div class="quote-conversation-scroll" data-quote-content>
+                <p class="empty-state quote-conversation-empty">Choose a topic to see your messages.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="quote-conversation-templates" hidden>
         {% for quote in quotes %}
             {% set messages = messages_by_quote.get(quote.id, []) %}
-            {% set subject = conversation_subjects.get(quote.id) %}
             {% set last_update = last_message_at.get(quote.id) %}
-            <article class="quote-user-card" id="quote-{{ quote.id }}">
-                <header class="quote-thread-header">
-                    <div>
-                        <h3>{{ subject }}</h3>
-                        <p class="quote-user-subtitle">
-                            Quote #{{ quote.id }} • Submitted {{ quote.created_at.strftime('%b %d, %Y %I:%M %p') }}
-                        </p>
+            {% set topic_label = quote.topic or ('Quote #' ~ quote.id) %}
+            <template data-quote-template="{{ quote.id }}">
+                <section class="quote-conversation-template">
+                    <div class="quote-conversation-notes">
+                        <strong>Original note:</strong> {{ quote.notes or '—' }}
                     </div>
-                    {% if last_update %}
-                        <span class="quote-thread-updated">Last updated {{ last_update.strftime('%b %d, %Y %I:%M %p') }}</span>
-                    {% endif %}
-                </header>
 
-                <div class="quote-user-notes">
-                    <strong>Your notes:</strong> {{ quote.notes or '—' }}
-                </div>
+                    <form class="message-form" action="{{ url_for('user_send_quote_message', quote_id=quote.id) }}" method="post">
+                        <label for="message-{{ quote.id }}">Message</label>
+                        <textarea id="message-{{ quote.id }}" name="message" rows="4" required placeholder="Write your message to the admin team"></textarea>
 
-                {% if messages %}
-                    <ul class="quote-message-list">
-                        {% for message in messages %}
-                            <li class="quote-message {{ 'quote-message--incoming' if message.sender_admin else 'quote-message--outgoing' }}">
-                                <div class="quote-message-meta">
-                                    <span class="quote-message-sender">
-                                        {% if message.sender_admin %}
-                                            {{ message.sender.full_name if message.sender else 'Admin Team' }}
-                                        {% elif message.sender and message.sender.id == current_user.id %}
-                                            You
-                                        {% else %}
-                                            {{ message.sender.full_name if message.sender else 'User' }}
-                                        {% endif %}
-                                    </span>
-                                    <span class="quote-message-date">{{ message.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
-                                </div>
-                                {% if message.subject %}
-                                    <p class="quote-message-subject">{{ message.subject }}</p>
-                                {% endif %}
-                                <p class="quote-message-body">{{ message.body }}</p>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="empty-state">No messages yet.</p>
-                {% endif %}
+                        <button type="submit" class="btn primary">Send Message</button>
+                    </form>
 
-                <form class="message-form" action="{{ url_for('user_send_quote_message', quote_id=quote.id) }}" method="post">
                     {% if messages %}
-                        <input type="hidden" name="subject" value="{{ subject }}">
+                        <div class="quote-messages-thread">
+                            {% for message in messages|sort(attribute='created_at', reverse=True) %}
+                                <article class="quote-message-item {{ 'quote-message--incoming' if message.sender_admin else 'quote-message--outgoing' }}{% if message.sender_admin and not message.read_by_user %} is-unread{% endif %}">
+                                    <header class="quote-message-item-meta">
+                                    <div>
+                                        <span class="quote-message-sender">
+                                            {% if message.sender_admin %}
+                                                {{ message.sender.full_name if message.sender else 'Admin Team' }}
+                                            {% elif message.sender and message.sender.id == current_user.id %}
+                                                You
+                                            {% else %}
+                                                {{ message.sender.full_name if message.sender else 'User' }}
+                                            {% endif %}
+                                        </span>
+                                        <span class="quote-message-date">{{ message.created_at|est }}</span>
+                                    </div>
+                                    <p class="quote-message-topic">{{ message.subject or quote.topic or 'No topic' }}</p>
+                                    </header>
+                                    <p class="quote-message-body">{{ message.body }}</p>
+                                </article>
+                            {% endfor %}
+                        </div>
                     {% else %}
-                        <label for="subject-{{ quote.id }}">Subject</label>
-                        <input id="subject-{{ quote.id }}" name="subject" type="text" required placeholder="Subject for this conversation">
+                        <p class="empty-state">No messages yet. Start the conversation above.</p>
                     {% endif %}
 
-                    <label for="message-{{ quote.id }}">Message</label>
-                    <textarea id="message-{{ quote.id }}" name="message" rows="4" required placeholder="Write your message to the admin team"></textarea>
-
-                    <button type="submit" class="btn primary">Send Message</button>
-                </form>
-            </article>
+                    {% if quote.request_type != 'system' %}
+                    <form class="quote-delete-form" action="{{ url_for('user_delete_quote', quote_id=quote.id) }}" method="post" onsubmit="return confirm('Delete this quote request? You will no longer receive updates.');">
+                        <button type="submit" class="btn danger">Delete Quote</button>
+                    </form>
+                    {% endif %}
+                </section>
+            </template>
         {% endfor %}
+    </div>
+
+    <div class="new-convo-overlay" data-new-convo-panel hidden>
+        <div class="new-convo-card">
+            <header class="new-convo-header">
+                <div>
+                    <p class="new-convo-label">New conversation</p>
+                    <h3>Send a fresh request</h3>
+                </div>
+                <button type="button" class="quote-conversation-close" aria-label="Close" data-new-convo-close>&times;</button>
+            </header>
+            <p class="new-convo-helper">Tell us what you need. A short subject and message is all it takes.</p>
+            <form class="message-form" action="{{ url_for('user_start_new_quote') }}" method="post">
+                <label for="new-topic">Subject</label>
+                <input id="new-topic" name="topic" type="text" autocomplete="off" required placeholder="e.g., Need help with a custom print">
+
+                <label for="new-notes">Message</label>
+                <textarea id="new-notes" name="notes" rows="4" required placeholder="Share the details you’d like to discuss."></textarea>
+
+                <button type="submit" class="btn primary">Send</button>
+            </form>
+        </div>
     </div>
     {% else %}
         <p class="empty-state">You don’t have any quote submissions yet.</p>

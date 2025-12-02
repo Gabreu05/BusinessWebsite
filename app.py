@@ -11,7 +11,12 @@ from urllib.parse import urlencode
 
 import requests  # type: ignore
 from logging.handlers import RotatingFileHandler
+from sqlalchemy import inspect as sa_inspect, text, func
 from sqlalchemy.orm import selectinload
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:  # Python < 3.9 (unlikely, but safe fallback)
+    ZoneInfo = None  # type: ignore[assignment]
 from flask import (
     Flask,
     flash,
@@ -21,8 +26,10 @@ from flask import (
     session,
     url_for,
     jsonify,
+    abort,
 )
 from flask_sqlalchemy import SQLAlchemy
+from flask_compress import Compress
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
@@ -36,6 +43,18 @@ QUOTE_UPLOAD_REFERENCE_DIR = os.path.join(QUOTE_UPLOAD_DIR, 'reference')
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'stl', '3mf'}
 
+def resolve_eastern_tz() -> timezone:
+    if ZoneInfo is not None:
+        try:
+            return ZoneInfo('America/New_York')  # type: ignore[return-value]
+        except Exception:
+            pass
+    # Fallback to fixed offset (no DST handling) if zoneinfo data unavailable
+    return timezone(timedelta(hours=-5))
+
+
+EASTERN_TZ = resolve_eastern_tz()
+
 app = Flask(__name__, template_folder='.')
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
@@ -47,10 +66,24 @@ else:
 app.config['SECRET_KEY'] = os.environ.get('DRIVENBYFAITH3D_SECRET', 'change-this-secret-key')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB upload limit
+DEFAULT_EMAILJS_TEMPLATE_ID = 'Quote_Request'
+
 app.config['EMAILJS_SERVICE_ID'] = os.environ.get('EMAILJS_SERVICE_ID')
-app.config['EMAILJS_TEMPLATE_ID'] = os.environ.get('EMAILJS_TEMPLATE_ID')
+app.config['EMAILJS_TEMPLATE_ID'] = os.environ.get('EMAILJS_TEMPLATE_ID') or DEFAULT_EMAILJS_TEMPLATE_ID
 app.config['EMAILJS_PUBLIC_KEY'] = os.environ.get('EMAILJS_PUBLIC_KEY')
 app.config['EMAILJS_PRIVATE_KEY'] = os.environ.get('EMAILJS_PRIVATE_KEY')
+app.config['EMAILJS_UPLOAD_TEMPLATE_ID'] = os.environ.get('EMAILJS_UPLOAD_TEMPLATE_ID') or app.config['EMAILJS_TEMPLATE_ID']
+design_template_env = os.environ.get('EMAILJS_DESIGN_TEMPLATE_ID') or os.environ.get('EMAILJS_PLAN_TEMPLATE_ID')
+app.config['EMAILJS_DESIGN_TEMPLATE_ID'] = design_template_env or app.config['EMAILJS_TEMPLATE_ID']
+app.config.setdefault('SEND_FILE_MAX_AGE_DEFAULT', timedelta(days=30))
+app.config.setdefault('COMPRESS_ALGORITHM', 'gzip')
+app.config.setdefault('COMPRESS_LEVEL', 6)
+
+EMAILJS_REQUIRED_KEYS = (
+    'EMAILJS_SERVICE_ID',
+    'EMAILJS_TEMPLATE_ID',
+    'EMAILJS_PUBLIC_KEY',
+)
 
 # Configure logging to a file
 if not app.debug and not os.environ.get('VERCEL'):
@@ -68,11 +101,90 @@ os.makedirs(BEFORE_AFTER_UPLOAD_DIR, exist_ok=True)
 os.makedirs(QUOTE_UPLOAD_WITH_FILE_DIR, exist_ok=True)
 os.makedirs(QUOTE_UPLOAD_REFERENCE_DIR, exist_ok=True)
 
+Compress(app)
+
 db = SQLAlchemy(app)
 
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+@app.template_filter('est')
+def format_est(value: Optional[datetime], fmt: str = '%b %d, %Y %I:%M %p') -> str:
+    if not value:
+        return ''
+
+    aware_value = value
+    if aware_value.tzinfo is None:
+        aware_value = aware_value.replace(tzinfo=timezone.utc)
+
+    try:
+        eastern_value = aware_value.astimezone(EASTERN_TZ)
+    except Exception:
+        return aware_value.strftime(fmt)
+
+    return eastern_value.strftime(fmt)
+
+
+def ensure_quote_request_topic_column() -> None:
+    try:
+        inspector = sa_inspect(db.engine)
+        columns = {column['name'] for column in inspector.get_columns('quote_request')}
+    except Exception as exc:
+        app.logger.warning('Unable to inspect quote_request table: %s', exc)
+        return
+
+    if 'topic' in columns:
+        return
+
+    try:
+        with db.engine.begin() as conn:
+            conn.execute(text('ALTER TABLE quote_request ADD COLUMN topic VARCHAR(255)'))
+        app.logger.info('Added topic column to quote_request table.')
+    except Exception as exc:
+        app.logger.warning('Failed to add topic column to quote_request table: %s', exc)
+
+
+def ensure_quote_indexes() -> None:
+    statements = [
+        'CREATE INDEX IF NOT EXISTS ix_quote_request_user_deleted ON quote_request (user_id, deleted_at)',
+        'CREATE INDEX IF NOT EXISTS ix_quote_request_created_at ON quote_request (created_at)',
+        'CREATE INDEX IF NOT EXISTS ix_quote_request_type ON quote_request (request_type)',
+        'CREATE INDEX IF NOT EXISTS ix_quote_message_quote_created ON quote_message (quote_id, created_at)',
+    ]
+    try:
+        with db.engine.begin() as conn:
+            for stmt in statements:
+                conn.execute(text(stmt))
+    except Exception as exc:
+        app.logger.warning('Failed to ensure quote indexes: %s', exc)
+
+
+def ensure_quote_message_read_columns() -> None:
+    try:
+        inspector = sa_inspect(db.engine)
+        columns = {column['name'] for column in inspector.get_columns('quote_message')}
+    except Exception as exc:
+        app.logger.warning('Unable to inspect quote_message table: %s', exc)
+        return
+
+    statements = []
+    if 'read_by_user' not in columns:
+        statements.append('ALTER TABLE quote_message ADD COLUMN read_by_user BOOLEAN NOT NULL DEFAULT 0')
+    if 'read_by_admin' not in columns:
+        statements.append('ALTER TABLE quote_message ADD COLUMN read_by_admin BOOLEAN NOT NULL DEFAULT 0')
+
+    if not statements:
+        return
+
+    try:
+        with db.engine.begin() as conn:
+            for stmt in statements:
+                conn.execute(text(stmt))
+        app.logger.info('Ensured quote_message read tracking columns.')
+    except Exception as exc:
+        app.logger.warning('Failed to add read tracking columns: %s', exc)
 
 
 class User(db.Model):
@@ -116,6 +228,7 @@ class QuoteRequest(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     requester_name = db.Column(db.String(120), nullable=False)
     request_type = db.Column(db.String(40), nullable=False)  # "has_file" or "needs_design"
+    topic = db.Column(db.String(255))
     uploaded_filename = db.Column(db.String(255))
     reference_image_filename = db.Column(db.String(255))
     notes = db.Column(db.Text)
@@ -128,6 +241,11 @@ class QuoteRequest(db.Model):
         cascade='all, delete-orphan',
         order_by='QuoteMessage.created_at'
     )
+    __table_args__ = (
+        db.Index('ix_quote_request_user_deleted', 'user_id', 'deleted_at'),
+        db.Index('ix_quote_request_created_at', 'created_at'),
+        db.Index('ix_quote_request_type', 'request_type'),
+    )
 
 
 class QuoteMessage(db.Model):
@@ -138,8 +256,13 @@ class QuoteMessage(db.Model):
     subject = db.Column(db.String(200))
     body = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow)
+    read_by_user = db.Column(db.Boolean, nullable=False, default=False)
+    read_by_admin = db.Column(db.Boolean, nullable=False, default=False)
 
     sender = db.relationship('User', back_populates='messages_sent', lazy=True)
+    __table_args__ = (
+        db.Index('ix_quote_message_quote_created', 'quote_id', 'created_at'),
+    )
 
 
 def allowed_file(filename: str) -> bool:
@@ -196,6 +319,48 @@ def get_current_user() -> Optional[User]:
     return db.session.get(User, user_id)
 
 
+@app.context_processor
+def inject_notification_counts():
+    counts = {
+        'user_notification_count': 0,
+        'admin_notification_count': 0,
+    }
+
+    user = get_current_user()
+    if not user:
+        return counts
+
+    if user.is_admin:
+        admin_count = (
+            db.session.query(func.count(QuoteMessage.id))
+            .join(QuoteRequest, QuoteMessage.quote_id == QuoteRequest.id)
+            .filter(
+                QuoteMessage.sender_admin.is_(False),
+                QuoteRequest.deleted_at.is_(None),
+                QuoteMessage.read_by_admin.is_(False),
+            )
+            .scalar()
+            or 0
+        )
+        counts['admin_notification_count'] = admin_count
+    else:
+        user_count = (
+            db.session.query(func.count(QuoteMessage.id))
+            .join(QuoteRequest, QuoteMessage.quote_id == QuoteRequest.id)
+            .filter(
+                QuoteRequest.user_id == user.id,
+                QuoteMessage.sender_admin.is_(True),
+                QuoteRequest.deleted_at.is_(None),
+                QuoteMessage.read_by_user.is_(False),
+            )
+            .scalar()
+            or 0
+        )
+        counts['user_notification_count'] = user_count
+
+    return counts
+
+
 def is_valid_email(value: str) -> bool:
     if not value:
         return False
@@ -204,20 +369,30 @@ def is_valid_email(value: str) -> bool:
     return bool(re.match(email_pattern, value))
 
 
-def send_email(to_address: str, subject: str, body: str) -> bool:
-    service_id = app.config.get('EMAILJS_SERVICE_ID')
-    template_id = app.config.get('EMAILJS_TEMPLATE_ID')
-    public_key = app.config.get('EMAILJS_PUBLIC_KEY')
-    private_key = app.config.get('EMAILJS_PRIVATE_KEY')
+def missing_emailjs_keys() -> list[str]:
+    return [key for key in EMAILJS_REQUIRED_KEYS if not app.config.get(key)]
 
-    if not all([service_id, template_id, public_key, private_key]):
-        app.logger.warning('EmailJS credentials missing; skipping email to %s', to_address)
+
+def send_email(
+    to_address: str,
+    subject: str,
+    body: str,
+    recipient_name: Optional[str] = None,
+    template_id: Optional[str] = None,
+) -> bool:
+    missing = missing_emailjs_keys()
+    if missing:
+        app.logger.warning(
+            'EmailJS credentials missing (%s); skipping email to %s',
+            ', '.join(missing),
+            to_address,
+        )
         return False
 
     payload = {
-        'service_id': service_id,
-        'template_id': template_id,
-        'user_id': public_key,
+        'service_id': app.config['EMAILJS_SERVICE_ID'],
+        'template_id': template_id or app.config['EMAILJS_TEMPLATE_ID'],
+        'user_id': app.config['EMAILJS_PUBLIC_KEY'],
         'template_params': {
             'to_email': to_address,
             'subject': subject,
@@ -225,10 +400,16 @@ def send_email(to_address: str, subject: str, body: str) -> bool:
         },
     }
 
+    if recipient_name:
+        payload['template_params']['name'] = recipient_name
+
     headers = {
         'Content-Type': 'application/json',
-        'Authorization': f'Bearer {private_key}',
     }
+
+    private_key = app.config.get('EMAILJS_PRIVATE_KEY')
+    if private_key:
+        headers['Authorization'] = f'Bearer {private_key}'
 
     try:
         response = requests.post(
@@ -249,14 +430,7 @@ def send_email(to_address: str, subject: str, body: str) -> bool:
 
 
 def emailjs_configured() -> bool:
-    return all(
-        [
-            app.config.get('EMAILJS_SERVICE_ID'),
-            app.config.get('EMAILJS_TEMPLATE_ID'),
-            app.config.get('EMAILJS_PUBLIC_KEY'),
-            app.config.get('EMAILJS_PRIVATE_KEY'),
-        ]
-    )
+    return not missing_emailjs_keys()
 
 
 def send_quote_submission_email(quote_request: QuoteRequest) -> bool:
@@ -265,27 +439,35 @@ def send_quote_submission_email(quote_request: QuoteRequest) -> bool:
         app.logger.warning('Quote %s has no associated user email; cannot send confirmation.', quote_request.id)
         return False
 
-    requester = quote_request.requester_name or user.full_name or user.username
+    requester = user.full_name or quote_request.requester_name or user.username
     quote_id = quote_request.id
 
     if quote_request.request_type == 'has_file':
-        subject = f"Quote #{quote_id}: Files received"
+        subject = f"Quote #{quote_id}: File received"
         body = (
             f"Hello {requester},\n\n"
-            "Thanks for sending your model files to drivenbyfaith3d. "
-            "We’ll review them and respond with pricing and timeline details shortly."
+            "Thanks for uploading your file to drivenbyfaith3d. "
+            "We’ll review it and respond with pricing and timeline details shortly."
             f"\n\nReference ID: #{quote_id}\n\nBlessings,\ndrivenbyfaith3d"
         )
+        template_override = app.config.get('EMAILJS_UPLOAD_TEMPLATE_ID') or app.config['EMAILJS_TEMPLATE_ID']
     else:
         subject = f"Quote #{quote_id}: Design request received"
         body = (
             f"Hello {requester},\n\n"
-            "Thanks for reaching out about a custom design. "
-            "We’ll look over your notes and follow up to discuss the details and next steps."
+            "Thanks for requesting a design with drivenbyfaith3d. "
+            "We’ll look over your notes and follow up to discuss next steps and timeline."
             f"\n\nReference ID: #{quote_id}\n\nBlessings,\ndrivenbyfaith3d"
         )
+        template_override = app.config.get('EMAILJS_DESIGN_TEMPLATE_ID') or app.config['EMAILJS_TEMPLATE_ID']
 
-    return send_email(user.email, subject, body)
+    return send_email(
+        user.email,
+        subject,
+        body,
+        recipient_name=requester,
+        template_id=template_override,
+    )
 
 
 @app.context_processor
@@ -388,17 +570,20 @@ def quote():
             return redirect(url_for('quote'))
 
         quote_type = request.form.get('quote_type', '').strip()
-        requester_name = request.form.get('requester_name', '').strip()
+        topic = request.form.get('topic', '').strip()
         notes = request.form.get('notes', '').strip()
 
-        if not requester_name:
-            flash('Please provide your name.', 'error')
+        if not topic:
+            flash('Please provide a topic for this quote.', 'error')
             return redirect(url_for('quote'))
+
+        requester_name = current_user.full_name or current_user.username
 
         quote_request = QuoteRequest(
             user_id=current_user.id,
             requester_name=requester_name,
             request_type=quote_type,
+            topic=topic,
             notes=notes or None,
         )
         db.session.add(quote_request)
@@ -435,7 +620,10 @@ def quote():
         if not send_quote_submission_email(quote_request):
             app.logger.warning('Automated quote confirmation failed for quote %s.', quote_request.id)
 
-        flash('Quote request received! We will review it and reach out soon.', 'success')
+        flash(' '.join([
+            'Quote request received! We will review it and reach out soon.',
+            'If you do not see a confirmation email within two minutes, please check your junk or spam folder.',
+        ]), 'success')
         return redirect(url_for('quote'))
 
     return render_template('quote.html', require_login=not bool(current_user), current_user=current_user)
@@ -446,7 +634,10 @@ def quote():
 def quote_messages():
     user = get_current_user()
     quotes = (
-        QuoteRequest.query.filter_by(user_id=user.id)
+        QuoteRequest.query.filter(
+            QuoteRequest.user_id == user.id,
+            QuoteRequest.deleted_at.is_(None),
+        )
         .options(
             selectinload(QuoteRequest.messages).selectinload(QuoteMessage.sender)
         )
@@ -457,12 +648,16 @@ def quote_messages():
     messages_by_quote = {quote.id: list(quote.messages) for quote in quotes}
     conversation_subjects = {}
     last_message_at = {}
+    unread_counts = {}
 
     for quote in quotes:
         messages = messages_by_quote[quote.id]
         conversation_subjects[quote.id] = conversation_subject_for(messages, quote.id)
         if messages:
             last_message_at[quote.id] = messages[-1].created_at
+        unread_counts[quote.id] = sum(
+            1 for message in messages if message.sender_admin and not message.read_by_user
+        )
 
     return render_template(
         'quote_messages.html',
@@ -470,6 +665,7 @@ def quote_messages():
         messages_by_quote=messages_by_quote,
         conversation_subjects=conversation_subjects,
         last_message_at=last_message_at,
+        unread_counts=unread_counts,
     )
 
 
@@ -483,31 +679,100 @@ def user_send_quote_message(quote_id: int):
         flash('Quote request not found.', 'error')
         return redirect(url_for('quote_messages'))
 
-    subject = request.form.get('subject', '').strip() or None
     message_body = request.form.get('message', '').strip()
 
     if not message_body:
         flash('Message cannot be empty.', 'error')
         return redirect(url_for('quote_messages', _anchor=f'quote-{quote_id}'))
 
-    existing_messages = QuoteMessage.query.filter_by(quote_id=quote_request.id) \
-        .order_by(QuoteMessage.created_at.asc()).all()
-    existing_subject = next((m.subject for m in existing_messages if m.subject), None)
-
-    final_subject = subject or existing_subject or f"Quote #{quote_request.id} Conversation"
-
     message = QuoteMessage(
         quote_id=quote_request.id,
         sender_id=user.id,
         sender_admin=False,
-        subject=final_subject,
         body=message_body,
+        read_by_user=True,
+        read_by_admin=False,
     )
     db.session.add(message)
     db.session.commit()
 
+    subject_line = quote_request.topic or f"Quote #{quote_request.id} Conversation"
+    email_body = (
+        f"Hello {quote_request.requester_name},\n\n"
+        f"A new message has been posted to your quote (ID {quote_request.id}).\n\n"
+        f"{message_body}\n\n"
+        "You can reply by logging into your drivenbyfaith3d account and viewing your messages."
+    )
+
+    if not send_email(quote_request.user.email, subject_line, email_body):
+        app.logger.warning('User quote message email failed for quote %s.', quote_id)
+
     flash('Message sent to the admin team.', 'success')
     return redirect(url_for('quote_messages', _anchor=f'quote-{quote_id}'))
+
+
+@app.route('/quotes/start', methods=['POST'])
+@login_required
+def user_start_new_quote():
+    user = get_current_user()
+    topic = request.form.get('topic', '').strip()
+    notes = request.form.get('notes', '').strip()
+
+    if not topic or not notes:
+        flash('Please provide both a topic and a message.', 'error')
+        return redirect(url_for('quote_messages'))
+
+    new_quote = QuoteRequest(
+        user_id=user.id,
+        requester_name=user.full_name or user.username,
+        request_type='needs_design',
+        topic=topic,
+        notes=notes,
+    )
+    db.session.add(new_quote)
+    db.session.commit()
+
+    flash('Your new conversation has been created.', 'success')
+    return redirect(url_for('quote_messages', _anchor=f'quote-{new_quote.id}'))
+
+
+@app.route('/quotes/<int:quote_id>/read', methods=['POST'])
+@login_required
+def user_mark_quote_read(quote_id: int):
+    user = get_current_user()
+    quote_request = QuoteRequest.query.filter_by(id=quote_id, user_id=user.id).first()
+    if not quote_request:
+        return abort(404)
+
+    updated = (
+        QuoteMessage.query.filter(
+            QuoteMessage.quote_id == quote_request.id,
+            QuoteMessage.sender_admin.is_(True),
+            QuoteMessage.read_by_user.is_(False),
+        ).update({QuoteMessage.read_by_user: True}, synchronize_session=False)
+    )
+    if updated:
+        db.session.commit()
+    return ('', 204)
+
+@app.route('/quotes/<int:quote_id>/delete', methods=['POST'])
+@login_required
+def user_delete_quote(quote_id: int):
+    user = get_current_user()
+    quote_request = QuoteRequest.query.filter_by(id=quote_id, user_id=user.id).first()
+
+    if not quote_request:
+        flash('Quote request not found.', 'error')
+        return redirect(url_for('quote_messages'))
+
+    if quote_request.deleted_at:
+        flash('Quote request already archived.', 'info')
+        return redirect(url_for('quote_messages'))
+
+    quote_request.deleted_at = utcnow()
+    db.session.commit()
+    flash('Quote request archived. You will no longer receive updates for this request.', 'success')
+    return redirect(url_for('quote_messages'))
 
 
 @app.route('/messages')
@@ -518,15 +783,25 @@ def user_messages():
     return render_template('user_messages.html', quotes=quotes)
 
 
-@app.route('/admin')
-@admin_required
-def admin_dashboard():
-    listings = Listing.query.order_by(Listing.created_at.desc()).all()
-    gallery = BeforeAfter.query.order_by(BeforeAfter.created_at.desc()).all()
-    email_status = {
-        'configured': emailjs_configured(),
-    }
-    return render_template('admin.html', listings=listings, gallery=gallery, email_status=email_status)
+def get_or_create_account_notice_quote(user: User) -> QuoteRequest:
+    quote = (
+        QuoteRequest.query.filter_by(user_id=user.id, request_type='system')
+        .order_by(QuoteRequest.created_at.asc())
+        .first()
+    )
+    if quote:
+        return quote
+
+    quote = QuoteRequest(
+        user_id=user.id,
+        requester_name=user.full_name or user.username,
+        request_type='system',
+        topic='Account Notifications',
+        notes='System-generated account notifications and password reset messages.',
+    )
+    db.session.add(quote)
+    db.session.flush()
+    return quote
 
 
 @app.route('/admin/listings/add', methods=['POST'])
@@ -544,7 +819,7 @@ def add_listing():
 
     if not title or not description or price_value <= 0:
         flash('Please provide a valid title, description, and price.', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('view_listings', admin='listings'))
 
     image_path = save_uploaded_file(image, 'listings')
 
@@ -557,7 +832,7 @@ def add_listing():
     db.session.add(listing)
     db.session.commit()
     flash('Listing added successfully.', 'success')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('view_listings', admin='listings'))
 
 
 @app.route('/admin/listings/<int:listing_id>/delete', methods=['POST'])
@@ -566,7 +841,7 @@ def delete_listing(listing_id: int):
     listing = db.session.get(Listing, listing_id)
     if not listing:
         flash('Listing not found.', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('view_listings', admin='listings'))
 
     if listing.image_filename:
         try:
@@ -577,7 +852,7 @@ def delete_listing(listing_id: int):
     db.session.delete(listing)
     db.session.commit()
     flash('Listing removed.', 'success')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('view_listings', admin='listings'))
 
 
 @app.route('/admin/gallery/add', methods=['POST'])
@@ -590,7 +865,7 @@ def add_before_after():
 
     if not title:
         flash('Title is required for before & after entries.', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('before_after_gallery', admin='gallery'))
 
     stl_path = save_uploaded_file(stl_image, 'before_after')
     printed_path = save_uploaded_file(printed_image, 'before_after')
@@ -604,7 +879,7 @@ def add_before_after():
     db.session.add(entry)
     db.session.commit()
     flash('Before & after entry added.', 'success')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('before_after_gallery', admin='gallery'))
 
 
 @app.route('/admin/gallery/<int:item_id>/delete', methods=['POST'])
@@ -613,7 +888,7 @@ def delete_before_after(item_id: int):
     entry = db.session.get(BeforeAfter, item_id)
     if not entry:
         flash('Gallery entry not found.', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('before_after_gallery', admin='gallery'))
 
     for path in [entry.stl_filename, entry.printed_filename]:
         if path:
@@ -625,15 +900,45 @@ def delete_before_after(item_id: int):
     db.session.delete(entry)
     db.session.commit()
     flash('Gallery entry removed.', 'success')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('before_after_gallery', admin='gallery'))
 
 
-@app.route('/admin/quotes')
+@app.route('/admin')
 @admin_required
-def admin_quotes():
-    active_requests = QuoteRequest.query.filter(QuoteRequest.deleted_at.is_(None)) \
-        .order_by(QuoteRequest.created_at.desc()).all()
-    return render_template('admin_quotes.html', active_requests=active_requests)
+def admin_dashboard():
+    return redirect(url_for('admin_quote_inbox'))
+
+
+@app.route('/admin/quotes/messages')
+@admin_required
+def admin_quote_inbox():
+    quotes = (
+        QuoteRequest.query.options(
+            selectinload(QuoteRequest.user),
+            selectinload(QuoteRequest.messages).selectinload(QuoteMessage.sender),
+        )
+        .order_by(QuoteRequest.created_at.desc())
+        .all()
+    )
+    active_quotes = [quote for quote in quotes if quote.deleted_at is None]
+
+    return render_template(
+        'admin_quotes_inbox.html',
+        quotes=quotes,
+        active_quotes=active_quotes,
+    )
+
+
+@app.route('/admin/accounts')
+@admin_required
+def admin_accounts():
+    users = User.query.order_by(User.created_at.desc()).all()
+    email_status = {
+        'configured': emailjs_configured(),
+        'missing': missing_emailjs_keys(),
+        'has_private_key': bool(app.config.get('EMAILJS_PRIVATE_KEY')),
+    }
+    return render_template('admin_accounts.html', users=users, email_status=email_status)
 
 
 @app.route('/admin/quotes/<int:quote_id>')
@@ -641,15 +946,26 @@ def admin_quotes():
 def admin_quote_detail(quote_id: int):
     quote_request = (
         QuoteRequest.query.options(
-            selectinload(QuoteRequest.messages).selectinload(QuoteMessage.sender)
+            selectinload(QuoteRequest.user),
+            selectinload(QuoteRequest.messages).selectinload(QuoteMessage.sender),
         ).get(quote_id)
     )
     if not quote_request:
         flash('Quote request not found.', 'error')
-        return redirect(url_for('admin_quotes'))
+        return redirect(url_for('admin_quote_inbox'))
 
-    messages = list(quote_request.messages)
+    messages = sorted(quote_request.messages, key=lambda m: m.created_at, reverse=True)
     conversation_subject = conversation_subject_for(messages, quote_request.id)
+
+    unread_updated = (
+        QuoteMessage.query.filter(
+            QuoteMessage.quote_id == quote_request.id,
+            QuoteMessage.sender_admin.is_(False),
+            QuoteMessage.read_by_admin.is_(False),
+        ).update({QuoteMessage.read_by_admin: True}, synchronize_session=False)
+    )
+    if unread_updated:
+        db.session.commit()
 
     return render_template(
         'admin_quote_detail.html',
@@ -675,7 +991,7 @@ def admin_send_quote_message(quote_id: int):
     quote_request = db.session.get(QuoteRequest, quote_id)
     if not quote_request:
         flash('Quote request not found.', 'error')
-        return redirect(url_for('admin_quotes'))
+        return redirect(url_for('admin_quote_inbox'))
 
     message_body = request.form.get('message', '').strip()
     if not message_body:
@@ -691,6 +1007,9 @@ def admin_send_quote_message(quote_id: int):
         sender_id=get_current_user().id,
         subject=email_subject,
         body=message_body,
+        sender_admin=True,
+        read_by_admin=True,
+        read_by_user=False,
     )
     db.session.add(message)
     db.session.commit()
@@ -701,7 +1020,8 @@ def admin_send_quote_message(quote_id: int):
         f"{message_body}\n\n"
         "Please log in to your drivenbyfaith3d account to reply or see more details."
     )
-    email_sent = send_email(quote_request.user.email, email_subject, email_body)
+    recipient_name = quote_request.user.full_name or quote_request.requester_name or quote_request.user.username
+    email_sent = send_email(quote_request.user.email, email_subject, email_body, recipient_name=recipient_name)
 
     if email_sent:
         flash('Message sent to user and emailed.', 'success')
@@ -710,21 +1030,78 @@ def admin_send_quote_message(quote_id: int):
     return redirect(url_for('admin_quote_detail', quote_id=quote_id))
 
 
+@app.route('/admin/quotes/<int:quote_id>/read', methods=['POST'])
+@admin_required
+def admin_mark_quote_read(quote_id: int):
+    quote_request = db.session.get(QuoteRequest, quote_id)
+    if not quote_request:
+        return abort(404)
+
+    updated = (
+        QuoteMessage.query.filter(
+            QuoteMessage.quote_id == quote_request.id,
+            QuoteMessage.sender_admin.is_(False),
+            QuoteMessage.read_by_admin.is_(False),
+        ).update({QuoteMessage.read_by_admin: True}, synchronize_session=False)
+    )
+    if updated:
+        db.session.commit()
+    return ('', 204)
+
+
+@app.route('/admin/accounts/<int:user_id>/send-reset', methods=['POST'])
+@admin_required
+def admin_send_reset_notice(user_id: int):
+    target_user = db.session.get(User, user_id)
+    if not target_user:
+        flash('User not found.', 'error')
+        return redirect(url_for('admin_accounts'))
+
+    current_admin = get_current_user()
+    if not current_admin:
+        flash('Unable to determine current admin user.', 'error')
+        return redirect(url_for('admin_accounts'))
+
+    system_quote = get_or_create_account_notice_quote(target_user)
+    body = (
+        f"Hello {target_user.full_name or target_user.username},\n\n"
+        "An administrator has requested that you reset your drivenbyfaith3d account password. "
+        "Please sign out, choose “Forgot password” on the login screen, and follow the instructions. "
+        "If you did not expect this message, reply here so we can assist.\n\n"
+        "-- drivenbyfaith3d admin team"
+    )
+
+    message = QuoteMessage(
+        quote_id=system_quote.id,
+        sender_id=current_admin.id,
+        sender_admin=True,
+        subject='Password Reset Requested',
+        body=body,
+        read_by_admin=True,
+        read_by_user=False,
+    )
+    db.session.add(message)
+    db.session.commit()
+
+    flash('Reset instructions sent via in-site messages.', 'success')
+    return redirect(url_for('admin_accounts'))
+
+
 @app.route('/admin/quotes/<int:quote_id>/delete', methods=['POST'])
 @admin_required
 def delete_quote(quote_id: int):
     quote_request = db.session.get(QuoteRequest, quote_id)
     if not quote_request:
         flash('Quote request not found.', 'error')
-        return redirect(url_for('admin_quotes'))
+        return redirect(url_for('admin_quote_inbox'))
     if quote_request.deleted_at:
         flash('Quote request already deleted.', 'info')
-        return redirect(url_for('admin_quotes'))
+        return redirect(url_for('admin_quote_detail', quote_id=quote_id))
 
     quote_request.deleted_at = utcnow()
     db.session.commit()
     flash('Quote request archived. It will remain available for 30 days.', 'success')
-    return redirect(url_for('admin_quotes'))
+    return redirect(url_for('admin_quote_detail', quote_id=quote_id))
 
 
 @app.route('/admin/quotes/<int:quote_id>/delete-permanent', methods=['POST'])
@@ -733,10 +1110,10 @@ def delete_quote_permanent(quote_id: int):
     quote_request = db.session.get(QuoteRequest, quote_id)
     if not quote_request:
         flash('Quote request not found.', 'error')
-        return redirect(url_for('admin_quotes'))
+        return redirect(url_for('admin_quotes_archived'))
     if not quote_request.deleted_at:
         flash('Archive the quote before permanently deleting it.', 'error')
-        return redirect(url_for('admin_quotes'))
+        return redirect(url_for('admin_quote_detail', quote_id=quote_id))
 
     # Remove associated files
     for path in [quote_request.uploaded_filename, quote_request.reference_image_filename]:
@@ -756,7 +1133,7 @@ def delete_quote_permanent(quote_id: int):
     db.session.delete(quote_request)
     db.session.commit()
     flash('Quote request permanently deleted.', 'success')
-    return redirect(url_for('admin_quotes'))
+    return redirect(url_for('admin_quotes_archived'))
 
 
 @app.route('/admin/quotes/<int:quote_id>/unarchive', methods=['POST'])
@@ -770,7 +1147,7 @@ def unarchive_quote(quote_id: int):
     quote_request.deleted_at = None
     db.session.commit()
     flash('Quote request restored to active list.', 'success')
-    return redirect(url_for('admin_quotes'))
+    return redirect(url_for('admin_quote_detail', quote_id=quote_id))
 
 
 @app.route('/admin/quotes/<int:quote_id>/messages', methods=['POST'])
@@ -779,12 +1156,12 @@ def create_quote_message(quote_id: int):
     quote_request = db.session.get(QuoteRequest, quote_id)
     if not quote_request or quote_request.deleted_at:
         flash('Quote request not available for messaging.', 'error')
-        return redirect(url_for('admin_quotes'))
+        return redirect(url_for('admin_quote_inbox'))
 
     current_admin = get_current_user()
     if not current_admin:
         flash('Unable to determine current admin user.', 'error')
-        return redirect(url_for('admin_quotes'))
+        return redirect(url_for('admin_quote_detail', quote_id=quote_id))
 
     existing_messages = list(quote_request.messages)
 
@@ -795,7 +1172,7 @@ def create_quote_message(quote_id: int):
     body = request.form.get('body', '').strip()
     if not body:
         flash('Message body cannot be empty.', 'error')
-        return redirect(url_for('admin_quotes'))
+        return redirect(url_for('admin_quote_detail', quote_id=quote_id))
 
     message = QuoteMessage(
         quote_id=quote_request.id,
@@ -803,19 +1180,22 @@ def create_quote_message(quote_id: int):
         sender_admin=True,
         subject=subject,
         body=body,
+        read_by_admin=True,
+        read_by_user=False,
     )
     db.session.add(message)
     db.session.commit()
 
-    email_body = f"Hello {quote_request.requester_name},\n\n{body}\n\n-- drivenbyfaith3d"
-    email_sent = send_email(quote_request.user.email, subject, email_body)
+    recipient_name = quote_request.user.full_name or quote_request.requester_name or quote_request.user.username
+    email_body = f"Hello {recipient_name},\n\n{body}\n\n-- drivenbyfaith3d"
+    email_sent = send_email(quote_request.user.email, subject, email_body, recipient_name=recipient_name)
 
     if email_sent:
         flash('Message sent to user.', 'success')
     else:
         flash('Message saved, but email failed to send. Verify EmailJS configuration and try again.', 'error')
 
-    return redirect(url_for('admin_quotes'))
+    return redirect(url_for('admin_quote_detail', quote_id=quote_id))
 
 
 @app.route('/admin/email/test', methods=['POST'])
@@ -826,7 +1206,7 @@ def admin_test_email():
 
     if not target_email or not is_valid_email(target_email):
         flash('Please provide a valid email address for testing.', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('admin_accounts'))
 
     body = (
         f"Hello {current_admin.full_name if current_admin else 'Admin'},\n\n"
@@ -834,16 +1214,21 @@ def admin_test_email():
         "-- drivenbyfaith3d"
     )
 
-    if send_email(target_email, 'drivenbyfaith3d Test Email', body):
+    recipient_name = (current_admin.full_name if current_admin else None) or target_email
+
+    if send_email(target_email, 'drivenbyfaith3d Test Email', body, recipient_name=recipient_name):
         flash(f'Test email sent to {target_email}. Please check the inbox and spam folder.', 'success')
     else:
         flash('Failed to send test email. Verify EmailJS configuration.', 'error')
 
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('admin_accounts'))
 
 
 def initialize_database() -> None:
     db.create_all()
+    ensure_quote_request_topic_column()
+    ensure_quote_indexes()
+    ensure_quote_message_read_columns()
 
     admin_username = os.environ.get('DRIVENBYFAITH3D_ADMIN_USER', 'drivenbyfaith3d')
     admin_password = os.environ.get('DRIVENBYFAITH3D_ADMIN_PASS', 'Sue5743pond!')
@@ -868,7 +1253,19 @@ def initialize_database() -> None:
 
 def conversation_subject_for(messages, quote_id: int) -> str:
     subject = next((m.subject for m in messages if getattr(m, 'subject', None)), None)
-    return subject or f"Quote #{quote_id} Conversation"
+    if subject:
+        return subject
+
+    quote_obj = None
+    if messages:
+        quote_obj = getattr(messages[0], 'quote', None)
+    if not quote_obj:
+        quote_obj = db.session.get(QuoteRequest, quote_id)
+
+    if quote_obj and getattr(quote_obj, 'topic', None):
+        return quote_obj.topic
+
+    return f"Quote #{quote_id} Conversation"
 
 
 with app.app_context():
@@ -876,4 +1273,10 @@ with app.app_context():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    try:
+        app.run(debug=True, host='0.0.0.0', port=5000)
+    except Exception as e:
+        print(f"Error starting application: {e}")
+        import traceback
+        traceback.print_exc()
+        input("Press Enter to exit...")

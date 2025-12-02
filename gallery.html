@@ -4,9 +4,89 @@
 {% block content %}
 <section class="section">
     <header class="section-header">
-        <h2>Before &amp; After Transformations</h2>
-        <p class="section-subtitle">From STL render to finished 3D print.</p>
+        <div>
+            <h2>Before &amp; After Transformations</h2>
+            <p class="section-subtitle">From STL render to finished 3D print.</p>
+        </div>
+        {% if current_user and current_user.is_admin %}
+            <button
+                class="btn secondary"
+                type="button"
+                data-admin-menu-toggle="gallery"
+                aria-expanded="false"
+            >
+                Manage gallery
+            </button>
+        {% endif %}
     </header>
+
+    {% if current_user and current_user.is_admin %}
+        <div class="page-admin-menu" data-admin-menu="gallery" hidden>
+            <div class="page-admin-menu-header">
+                <div>
+                    <h3>Gallery admin menu</h3>
+                    <p>Share new transformations or retire older showcases.</p>
+                </div>
+                <button class="page-admin-menu-close" type="button" data-admin-menu-close aria-label="Close gallery admin menu">&times;</button>
+            </div>
+            <div class="page-admin-menu-body">
+                <div class="admin-grid">
+                    <div class="admin-card">
+                        <h4>Add before &amp; after</h4>
+                        <form class="stack" action="{{ url_for('add_before_after') }}" method="post" enctype="multipart/form-data">
+                            <label for="gallery-title-admin">Title</label>
+                            <input id="gallery-title-admin" name="title" type="text" required>
+
+                            <label for="gallery-description-admin">Description (optional)</label>
+                            <textarea id="gallery-description-admin" name="description" rows="4"></textarea>
+
+                            <label for="gallery-stl-admin">STL Image</label>
+                            <input id="gallery-stl-admin" name="stl_image" type="file" accept="image/*">
+
+                            <label for="gallery-printed-admin">Printed Image</label>
+                            <input id="gallery-printed-admin" name="printed_image" type="file" accept="image/*">
+
+                            <button type="submit" class="btn primary">Add Showcase</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="admin-table admin-inline-table">
+                    <div class="admin-table-heading">
+                        <h4>Before &amp; After entries</h4>
+                        <p class="admin-table-subtitle">Clean up older uploads in a single click.</p>
+                    </div>
+                    {% if items %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                    <tr>
+                                        <td>{{ item.title }}</td>
+                                        <td>{% if item.description %}{{ item.description[:120] }}{% if item.description|length > 120 %}…{% endif %}{% else %}—{% endif %}</td>
+                                        <td>
+                                            <form action="{{ url_for('delete_before_after', item_id=item.id) }}" method="post" onsubmit="return confirm('Remove this gallery entry?');">
+                                                <button type="submit" class="btn danger">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="empty-state">No gallery entries yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
     {% if items %}
         <div class="gallery-grid">
             {% for item in items %}
@@ -14,13 +94,13 @@
                     <div class="gallery-images">
                         {% if item.stl_filename %}
                             <figure>
-                                <img src="{{ url_for('static', filename=item.stl_filename) }}" alt="{{ item.title }} STL file" loading="lazy">
+                                <img src="{{ url_for('static', filename=item.stl_filename) }}" alt="{{ item.title }} STL file" loading="lazy" decoding="async">
                                 <figcaption>STL model</figcaption>
                             </figure>
                         {% endif %}
                         {% if item.printed_filename %}
                             <figure>
-                                <img src="{{ url_for('static', filename=item.printed_filename) }}" alt="{{ item.title }} printed part" loading="lazy">
+                                <img src="{{ url_for('static', filename=item.printed_filename) }}" alt="{{ item.title }} printed part" loading="lazy" decoding="async">
                                 <figcaption>3D print</figcaption>
                             </figure>
                         {% endif %}
@@ -38,4 +118,16 @@
         <p class="empty-state">We&apos;re working on new showcases. Stay tuned!</p>
     {% endif %}
 </section>
+
+{% if current_user and current_user.is_admin and request.args.get('admin') == 'gallery' %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var galleryToggle = document.querySelector('[data-admin-menu-toggle="gallery"]');
+    if (galleryToggle && galleryToggle.getAttribute('aria-expanded') === 'false') {
+        galleryToggle.click();
+        galleryToggle.focus({ preventScroll: true });
+    }
+});
+</script>
+{% endif %}
 {% endblock %}

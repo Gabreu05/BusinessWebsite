@@ -4,40 +4,119 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}drivenbyfaith3d{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ current_year | default(2025) }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <header class="site-header">
-        <div class="container">
-            <a class="brand" href="{{ url_for('index') }}">
-                <img class="brand-logo" src="{{ url_for('static', filename='img/DrivenByFaith3d Logo.png') }}" alt="DrivenByFaith3D logo">
-                <span class="brand-text">drivenbyfaith3d</span>
-            </a>
-            <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-            <nav class="nav-menu" data-nav>
-                <a href="{{ url_for('index') }}" class="nav-link">Home</a>
-                <a href="{{ url_for('view_listings') }}" class="nav-link">Shop Listings</a>
-                <a href="{{ url_for('before_after_gallery') }}" class="nav-link">Before &amp; After</a>
-                <a href="{{ url_for('quote') }}" class="nav-link">Get a Quote</a>
-                {% if current_user %}
-                    <span class="nav-link nav-user">Hi, {{ current_user.username }}!</span>
-                    <a href="{{ url_for('quote_messages') }}" class="nav-link">Messages</a>
-                    {% if current_user.is_admin %}
-                        <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Admin</a>
+        <div class="container header-inner">
+            <div class="header-left">
+                <div class="account-menu-wrapper">
+                    <button class="account-toggle" type="button" aria-haspopup="true" aria-expanded="false" data-account-toggle>
+                        <span class="sr-only">Toggle account menu</span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <div class="account-menu" data-account-menu role="menu" aria-label="Account menu">
+                        {% if current_user %}
+                            <div class="account-overview">
+                                <p class="account-overview-label">Signed in as</p>
+                                <p class="account-overview-name">{{ current_user.full_name or current_user.username }}</p>
+                                {% if current_user.email %}
+                                    <p class="account-overview-email">{{ current_user.email }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="account-links">
+                                {% if current_user.is_admin %}
+                                    <a href="{{ url_for('admin_quote_inbox') }}" class="account-link" role="menuitem">
+                                        Quotes
+                                        <span class="account-link-badge {% if (admin_notification_count or 0) == 0 %}is-zero{% endif %}">
+                                            {{ admin_notification_count or 0 }}
+                                        </span>
+                                    </a>
+                                    <a href="{{ url_for('view_listings') }}" class="account-link" role="menuitem">Shop listings</a>
+                                    <a href="{{ url_for('before_after_gallery') }}" class="account-link" role="menuitem">Before &amp; After</a>
+                                    <a href="{{ url_for('admin_accounts') }}" class="account-link" role="menuitem">Accounts</a>
+                                {% else %}
+                                    <a href="{{ url_for('quote_messages') }}" class="account-link" role="menuitem">
+                                        Messages &amp; updates
+                                        <span class="account-link-badge {% if (user_notification_count or 0) == 0 %}is-zero{% endif %}">
+                                            {{ user_notification_count or 0 }}
+                                        </span>
+                                    </a>
+                                    <a href="{{ url_for('quote') }}" class="account-link" role="menuitem">Submit a new quote</a>
+                                    <a href="{{ url_for('before_after_gallery') }}" class="account-link" role="menuitem">Before &amp; After</a>
+                                    <a href="{{ url_for('view_listings') }}" class="account-link" role="menuitem">Shop listings</a>
+                                {% endif %}
+                                <a href="{{ url_for('logout') }}" class="account-link account-link-danger" role="menuitem">Log out</a>
+                            </div>
+                        {% else %}
+                            <div class="account-overview">
+                                <p class="account-overview-label">Guest mode</p>
+                                <p class="account-overview-helper">Sign in to track quote replies and messages.</p>
+                            </div>
+                            <div class="account-links">
+                                <a href="{{ url_for('login') }}" class="account-link" role="menuitem">Log in</a>
+                                <a href="{{ url_for('register') }}" class="account-link account-link-accent" role="menuitem">Create an account</a>
+                                <a href="{{ url_for('quote') }}" class="account-link" role="menuitem">Start a quote</a>
+                                <a href="{{ url_for('before_after_gallery') }}" class="account-link" role="menuitem">Before &amp; After</a>
+                                <a href="{{ url_for('view_listings') }}" class="account-link" role="menuitem">Shop listings</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <a class="brand" href="{{ url_for('index') }}">
+                <img class="brand-logo" src="{{ url_for('static', filename='img/DrivenByFaith3d Logo.png') }}" alt="DrivenByFaith3D logo" width="72" height="72" fetchpriority="high">
+                    <span class="brand-text">drivenbyfaith3d</span>
+                </a>
+            </div>
+            <div class="header-right">
+                <nav class="nav-menu" data-nav>
+                    <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+                    <a href="{{ url_for('view_listings') }}" class="nav-link">Shop Listings</a>
+                    <a href="{{ url_for('before_after_gallery') }}" class="nav-link">Before &amp; After</a>
+                    {% if not current_user or not current_user.is_admin %}
+                        <a href="{{ url_for('quote') }}" class="nav-link">Get a Quote</a>
                     {% endif %}
-                    <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
-                {% else %}
-                    <a href="{{ url_for('login') }}" class="nav-link">Login</a>
-                    <a href="{{ url_for('register') }}" class="nav-link nav-cta">Sign Up</a>
-                {% endif %}
-            </nav>
+                    {% if current_user %}
+                        {% if current_user.is_admin %}
+                            <span class="nav-link nav-user">Admin</span>
+                        {% else %}
+                            {% set first_name = (current_user.full_name.split(' ')[0] if current_user.full_name else current_user.username) %}
+                            <span class="nav-link nav-user">Hi, {{ first_name }}!</span>
+                        {% endif %}
+                        {% set notification_count = admin_notification_count if current_user.is_admin else user_notification_count %}
+                        {% set notification_label = 'Quotes' if current_user.is_admin else 'Messages' %}
+                        {% set notification_target = url_for('admin_quote_inbox') if current_user.is_admin else url_for('quote_messages') %}
+                        <a href="{{ notification_target }}" class="nav-link notification-link">
+                            <span class="notification-bell" aria-hidden="true">
+                                <span class="notification-bell-icon">
+                                    <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                                        <path d="M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2Z" fill="currentColor"></path>
+                                        <path d="M18 16v-5a6 6 0 0 0-12 0v5L4.5 18.5h15Z" fill="currentColor" opacity="0.85"></path>
+                                    </svg>
+                                </span>
+                                <span class="notification-badge {% if (notification_count or 0) == 0 %}is-zero{% endif %}">
+                                    {{ notification_count or 0 }}
+                                </span>
+                            </span>
+                            <span class="notification-label">{{ notification_label }}</span>
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+                        <a href="{{ url_for('register') }}" class="nav-link nav-cta">Sign Up</a>
+                    {% endif %}
+                </nav>
+                <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
         </div>
     </header>
 

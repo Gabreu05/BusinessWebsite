@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Quotes | drivenbyfaith3d{% endblock %}
+
+{% block content %}
+<section class="section">
+    <header class="section-header">
+        <div>
+            <h2>Quotes</h2>
+            <p class="section-subtitle">Review every active request and open the thread when you need to reply.</p>
+        </div>
+        <div class="section-links">
+            <a class="section-link" href="{{ url_for('admin_quotes_archived') }}">View Archived Quotes</a>
+        </div>
+    </header>
+
+    {% if active_quotes %}
+        <div class="admin-table admin-quotes-overview">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Submitted</th>
+                        <th>Topic</th>
+                        <th>User</th>
+                        <th>Type</th>
+                        <th>Notes</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for quote in active_quotes %}
+                        <tr>
+                            <td>{{ quote.created_at|est('%b %d, %Y') }}</td>
+                            <td>{{ quote.topic or ('Quote #' ~ quote.id) }}</td>
+                            <td>{{ quote.user.full_name if quote.user else quote.requester_name }}</td>
+                            <td>{{ 'Upload Your File' if quote.request_type == 'has_file' else 'Start a Design' }}</td>
+                            <td>{{ quote.notes or '—' }}</td>
+                            <td class="admin-actions-cell">
+                                <a class="section-link" href="{{ url_for('admin_quote_detail', quote_id=quote.id) }}">
+                                    Open
+                                </a>
+                                <form action="{{ url_for('delete_quote', quote_id=quote.id) }}" method="post" onsubmit="return confirm('Archive this quote request?');">
+                                    <button type="submit" class="btn danger">Archive</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="empty-state">No active quotes yet.</p>
+    {% endif %}
+</section>
+{% endblock %}
+

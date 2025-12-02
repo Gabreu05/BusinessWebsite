@@ -1,40 +1,45 @@
 {% extends 'base.html' %}
-{% block title %}Quote Detail | drivenbyfaith3d{% endblock %}
+{% block title %}{{ quote.topic or ('Quote #' ~ quote.id) }} | drivenbyfaith3d{% endblock %}
 
 {% block content %}
-<section class="admin-section quote-detail">
+<section class="section">
     <header class="section-header">
-        <h2>Quote Request Detail</h2>
+        <div>
+            <h2>{{ quote.topic or ('Quote #' ~ quote.id) }}</h2>
+            <p class="section-subtitle">Full history and replies for this request.</p>
+        </div>
         <div class="section-links">
-            <a class="section-link" href="{{ url_for('admin_quotes') }}">Back to Quotes</a>
-            <a class="section-link" href="{{ url_for('admin_quote_detail', quote_id=quote.id) }}">Refresh</a>
+            <a class="section-link" href="{{ url_for('admin_quote_inbox') }}">Back to Quotes</a>
+            <a class="section-link" href="{{ url_for('admin_quotes_archived') }}">View Archived Quotes</a>
         </div>
     </header>
 
-    <article class="detail-card">
+    <article class="detail-card quote-summary-card">
         {% if quote.deleted_at %}
-            <div class="archived-banner">Archived on {{ quote.deleted_at.strftime('%b %d, %Y %I:%M %p') }}</div>
+            <div class="archived-banner">Archived on {{ quote.deleted_at|est }}</div>
         {% endif %}
         <dl>
             <div>
                 <dt>Submitted</dt>
-                <dd>{{ quote.created_at.strftime('%b %d, %Y %I:%M %p') }}</dd>
-            </div>
-            <div>
-                <dt>User</dt>
-                <dd>{{ quote.user.full_name }} ({{ quote.user.username }})</dd>
-            </div>
-            <div>
-                <dt>Email</dt>
-                <dd>{{ quote.user.email }}</dd>
-            </div>
-            <div>
-                <dt>Request Type</dt>
-                <dd>{{ 'STL / 3MF Upload' if quote.request_type == 'has_file' else 'Design Needed' }}</dd>
+                <dd>{{ quote.created_at|est }}</dd>
             </div>
             <div>
                 <dt>Display Name</dt>
-                <dd>{{ quote.requester_name }}</dd>
+                <dd>
+                    {% if quote.user %}
+                        {{ quote.user.full_name }} ({{ quote.user.username }})
+                    {% else %}
+                        {{ quote.requester_name or '—' }}
+                    {% endif %}
+                </dd>
+            </div>
+            <div>
+                <dt>Topic</dt>
+                <dd>{{ quote.topic or '—' }}</dd>
+            </div>
+            <div>
+                <dt>Email</dt>
+                <dd>{{ quote.user.email if quote.user else '—' }}</dd>
             </div>
             {% if quote.uploaded_filename %}
                 <div>
@@ -48,14 +53,71 @@
                     <dd><a href="{{ url_for('static', filename=quote.reference_image_filename) }}" target="_blank">View</a></dd>
                 </div>
             {% endif %}
-            <div>
-                <dt>Notes</dt>
-                <dd>{% if quote.notes %}{{ quote.notes }}{% else %}—{% endif %}</dd>
-            </div>
         </dl>
     </article>
 
-    <section class="detail-actions">
+    <div class="quote-conversation-notes">
+        <strong>Original note:</strong> {{ quote.notes or '—' }}
+    </div>
+
+    <form class="message-form" action="{{ url_for('create_quote_message', quote_id=quote.id) }}" method="post">
+        <label for="subject-{{ quote.id }}">Subject</label>
+        <input
+            id="subject-{{ quote.id }}"
+            name="subject"
+            type="text"
+            value="{{ conversation_subject }}"
+            {% if messages %}readonly{% endif %}
+            placeholder="Conversation subject">
+
+        <label for="body-{{ quote.id }}">Message</label>
+        <textarea id="body-{{ quote.id }}" name="body" rows="4" required placeholder="Write a note to {{ quote.user.full_name if quote.user else quote.requester_name }}"></textarea>
+
+        <button type="submit" class="btn primary">Send Message</button>
+    </form>
+
+    {% if messages %}
+        <div class="quote-messages-table-wrapper">
+            <table class="quote-messages-table">
+                <thead>
+                    <tr>
+                        <th class="quote-message-topic-header">Topic</th>
+                        <th class="quote-message-body-header">Main Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for message in messages %}
+                        <tr class="quote-message-row {{ 'quote-message--outgoing' if message.sender_admin else 'quote-message--incoming' }}">
+                            <td class="quote-message-topic-cell">
+                                <div class="quote-message-meta">
+                                    <span class="quote-message-sender">
+                                        {% if message.sender %}
+                                            {{ message.sender.full_name }}
+                                        {% elif message.sender_admin %}
+                                            Admin Team
+                                        {% else %}
+                                            User
+                                        {% endif %}
+                                    </span>
+                                    <span class="quote-message-date">{{ message.created_at|est }}</span>
+                                </div>
+                                <div class="quote-message-topic">
+                                    {{ message.subject or conversation_subject }}
+                                </div>
+                            </td>
+                            <td class="quote-message-body-cell">
+                                <p class="quote-message-body">{{ message.body }}</p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="empty-state">No messages yet.</p>
+    {% endif %}
+
+    <div class="detail-actions">
         {% if quote.deleted_at %}
             <form action="{{ url_for('unarchive_quote', quote_id=quote.id) }}" method="post" onsubmit="return confirm('Restore this quote to active list?');">
                 <button type="submit" class="btn secondary">Unarchive</button>
@@ -65,64 +127,6 @@
                 <button type="submit" class="btn danger">Archive</button>
             </form>
         {% endif %}
-    </section>
-
-    <section class="detail-messages">
-        {% set last_message = messages|last if messages else None %}
-        <header class="quote-thread-header">
-            <div>
-                <h3>{{ conversation_subject }}</h3>
-                <p class="quote-user-subtitle">
-                    Quote #{{ quote.id }} • Submitted {{ quote.created_at.strftime('%b %d, %Y %I:%M %p') }}
-                </p>
-            </div>
-            {% if last_message %}
-                <span class="quote-thread-updated">Last updated {{ last_message.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
-            {% endif %}
-        </header>
-
-        {% if messages %}
-            <ul class="messages-list quote-message-list">
-                {% for message in messages %}
-                    <li class="quote-message {{ 'quote-message--incoming' if not message.sender_admin else 'quote-message--outgoing' }}">
-                        <div class="quote-message-meta">
-                            <span class="quote-message-sender">
-                                {% if message.sender %}
-                                    {{ message.sender.full_name }}
-                                {% elif message.sender_admin %}
-                                    Admin Team
-                                {% else %}
-                                    User
-                                {% endif %}
-                            </span>
-                            <span class="quote-message-date">{{ message.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
-                        </div>
-                        {% if message.subject %}
-                            <p class="quote-message-subject">{{ message.subject }}</p>
-                        {% endif %}
-                        <p class="quote-message-body">{{ message.body }}</p>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="empty-state">No messages yet.</p>
-        {% endif %}
-
-        <form class="message-form" action="{{ url_for('create_quote_message', quote_id=quote.id) }}" method="post">
-            <label for="subject-{{ quote.id }}">Subject</label>
-            <input
-                id="subject-{{ quote.id }}"
-                name="subject"
-                type="text"
-                value="{{ conversation_subject }}"
-                {% if messages %}readonly{% endif %}
-                placeholder="Conversation subject">
-
-            <label for="body-{{ quote.id }}">Message</label>
-            <textarea id="body-{{ quote.id }}" name="body" rows="4" required placeholder="Write a note to {{ quote.user.full_name }}"></textarea>
-
-            <button type="submit" class="btn primary">Send Message</button>
-        </form>
-    </section>
+    </div>
 </section>
 {% endblock %}
